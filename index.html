@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+    <head>
     <meta charset="UTF-8">
-    <!-- Viewport for App Feel (No Zoom, Notch Support) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Wiki Modern</title>
     
     <!-- PWA / Manifest Connection -->
     <link rel="manifest" href="manifest.json">
-    <title>Wiki Modern</title>
+    
+    <!-- NEW CREATIVE ICONS (Blue Gradient W) -->
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/10832/10832322.png">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/10832/10832322.png">
 
     <!-- iOS Native Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Wiki Modern">
-    
-    <!-- iOS Icons (High Res) -->
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5968/5968958.png">
 
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
@@ -23,88 +23,46 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <style>
-        /* --- THEME VARIABLES --- */
+        /* ... (Keep your existing CSS exactly the same) ... */
+        /* Just copy the <style> block from your previous file here */
+        /* VARIABLES */
         :root {
-            --bg-main: #f8fafc;
-            --bg-card: #ffffff;
-            --text-primary: #0f172a;
-            --text-secondary: #64748b;
-            --border: #e2e8f0;
-            --accent: #2563eb;
-            --accent-soft: #eff6ff;
-            --font-serif: 'Merriweather', serif;
-            --safe-top: env(safe-area-inset-top, 0px);
-            --safe-bottom: env(safe-area-inset-bottom, 20px);
+            --bg-main: #f8fafc; --bg-card: #ffffff; --text-primary: #0f172a; --text-secondary: #64748b;
+            --border: #e2e8f0; --accent: #2563eb; --accent-soft: #eff6ff; --font-serif: 'Merriweather', serif;
+            --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
-
-        [data-theme="dark"] {
-            --bg-main: #0f172a;
-            --bg-card: #1e293b;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --border: #334155;
-            --accent: #60a5fa;
-            --accent-soft: #172554;
-        }
-
-        [data-theme="sepia"] {
-            --bg-main: #f5e6d3;
-            --bg-card: #fdf6e3;
-            --text-primary: #433422;
-            --text-secondary: #8b7d6b;
-            --border: #e6dcc8;
-            --accent: #d97706;
-            --accent-soft: #fff7ed;
-        }
-
-        /* --- GLOBAL STYLES --- */
+        /* ... rest of your CSS ... */
+        
+        /* (Make sure to include the CSS you already have) */
+        [data-theme="dark"] { --bg-main: #0f172a; --bg-card: #1e293b; --text-primary: #f8fafc; --text-secondary: #94a3b8; --border: #334155; --accent: #60a5fa; --accent-soft: #172554; }
+        [data-theme="sepia"] { --bg-main: #f5e6d3; --bg-card: #fdf6e3; --text-primary: #433422; --text-secondary: #8b7d6b; --border: #e6dcc8; --accent: #d97706; --accent-soft: #fff7ed; }
+        
         html, body { height: 100%; width: 100%; overscroll-behavior-y: none; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--bg-main); color: var(--text-primary); transition: background 0.3s, color 0.3s; padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); }
-        
-        /* No-Select for App Feel */
         button, nav, .ui-element, summary { user-select: none; -webkit-user-select: none; }
+        ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; opacity: 0; transform: translateY(8px); } @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
         
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-        /* Animations */
-        .fade-in { animation: fadeIn 0.4s ease-out forwards; opacity: 0; transform: translateY(8px); }
-        @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
-
-        /* Article Panel (Slide Over) */
-        #article-panel {
-            position: fixed; top: 0; right: 0; bottom: 0; width: 100%; max-width: 900px; background: var(--bg-card); z-index: 50;
-            transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: -10px 0 40px rgba(0,0,0,0.2); display: flex; flex-direction: column; padding-top: var(--safe-top);
-        }
+        #article-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 100%; max-width: 900px; background: var(--bg-card); z-index: 50; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: -10px 0 40px rgba(0,0,0,0.2); display: flex; flex-direction: column; padding-top: var(--safe-top); }
         #article-panel.open { transform: translateX(0); }
-        
         #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); z-index: 40; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
         #overlay.active { opacity: 1; pointer-events: auto; }
-
-        /* Article Content */
+        
         .wiki-content { font-family: var(--font-serif); font-size: 1.15rem; line-height: 1.85; }
         .wiki-content p { margin-bottom: 1.5rem; }
         .wiki-content a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; font-weight: 500; }
         .wiki-content img { border-radius: 0.75rem; margin: 1.5rem auto; max-width: 100%; height: auto; display: block; }
-        
-        /* Accordions */
         details { border-bottom: 1px solid var(--border); }
         details > summary { list-style: none; padding: 1.2rem 0.5rem; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: space-between; color: var(--text-primary); }
         details > summary::after { content: '+'; font-size: 1.5rem; font-weight: 300; opacity: 0.6; transition: transform 0.2s; }
         details[open] > summary::after { transform: rotate(45deg); }
         .details-content { padding: 0.5rem 1rem 2rem 1rem; }
-
-        /* iOS Install Hint Modal */
+        
         #ios-install-modal { position: fixed; bottom: 40px; left: 20px; right: 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; z-index: 100; box-shadow: 0 10px 40px rgba(0,0,0,0.3); display: none; animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-        /* Game HUD */
         #game-hud { background: linear-gradient(135deg, #2563eb, #4f46e5); color: white; }
     </style>
-</head>
+    </head>
 <body data-theme="light">
 
     <!-- NAV -->
