@@ -9,12 +9,12 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/10832/10832322.png",
+      "src": "https://ui-avatars.com/api/?name=Wiki&background=2563eb&color=fff&size=192&length=1&font-size=0.6&bold=true",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/10832/10832322.png",
+      "src": "https://ui-avatars.com/api/?name=Wiki&background=2563eb&color=fff&size=512&length=1&font-size=0.6&bold=true",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
