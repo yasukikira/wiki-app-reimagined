@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Wiki Modern</title>
+
+    <!-- PWA / Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="https://ui-avatars.com/api/?name=Wiki&background=2563eb&color=fff&size=512&length=1&font-size=0.6&bold=true">
+    <link rel="icon" type="image/png" href="https://ui-avatars.com/api/?name=Wiki&background=2563eb&color=fff&size=512&length=1&font-size=0.6&bold=true">
+
+    <!-- iOS Settings -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <!-- Libraries -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        /* VARIABLES */
+        :root {
+            --bg-main: #f8fafc; --bg-card: #ffffff; --text-primary: #0f172a; --text-secondary: #64748b;
+            --border: #e2e8f0; --accent: #2563eb; --accent-soft: #eff6ff; --font-serif: 'Merriweather', serif;
+            --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 20px);
+        }
+        [data-theme="dark"] { --bg-main: #0f172a; --bg-card: #1e293b; --text-primary: #f8fafc; --text-secondary: #94a3b8; --border: #334155; --accent: #60a5fa; --accent-soft: #172554; }
+        [data-theme="sepia"] { --bg-main: #f5e6d3; --bg-card: #fdf6e3; --text-primary: #433422; --text-secondary: #8b7d6b; --border: #e6dcc8; --accent: #d97706; --accent-soft: #fff7ed; }
+
+        /* GLOBAL */
+        html, body { height: 100%; width: 100%; overscroll-behavior-y: none; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-main); color: var(--text-primary); transition: background 0.3s, color 0.3s; padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); }
+        button, nav, .ui-element, summary { user-select: none; -webkit-user-select: none; }
+        ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; opacity: 0; transform: translateY(8px); } @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+
+        /* PANELS */
+        #article-panel {
+            position: fixed; top: 0; right: 0; bottom: 0; width: 100%; max-width: 900px; background: var(--bg-card); z-index: 50;
+            transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: -10px 0 40px rgba(0,0,0,0.2); display: flex; flex-direction: column; padding-top: var(--safe-top);
+        }
+        #article-panel.open { transform: translateX(0); }
+        #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); z-index: 40; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        #overlay.active { opacity: 1; pointer-events: auto; }
+
+        /* CONTENT */
+        .wiki-content { font-family: var(--font-serif); font-size: 1.15rem; line-height: 1.85; }
+        .wiki-content p { margin-bottom: 1.25rem; }
+        .wiki-content a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; font-weight: 500; }
+        .wiki-content img { border-radius: 0.75rem; max-width: 100%; height: auto; display: block; margin: 1.5rem auto; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        
+        /* Tables */
+        .table-wrapper { overflow-x: auto; margin: 1.5rem 0; border-radius: 0.75rem; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); background: var(--bg-main); }
+        .wiki-content table { width: 100%; border-collapse: collapse; font-size: 0.85rem; font-family: 'Inter', sans-serif; min-width: 100%; white-space: nowrap; }
+        .wiki-content th, .wiki-content td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+        .wiki-content th { background: var(--bg-main); font-weight: 700; color: var(--text-primary); position: sticky; left: 0; }
+
+        /* Accordions */
+        details { border-bottom: 1px solid var(--border); scroll-margin-top: 80px; }
+        details > summary { list-style: none; padding: 1.2rem 0.5rem; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: space-between; color: var(--text-primary); }
+        details > summary::after { content: '+'; font-size: 1.5rem; font-weight: 300; opacity: 0.6; transition: transform 0.2s; }
+        details[open] > summary::after { transform: rotate(45deg); }
+        .details-content { padding: 0.5rem 1rem 2rem 1rem; }
+
+        /* Components */
+        #menu-dropdown { transform-origin: top right; transition: transform 0.2s, opacity 0.2s; }
+        #menu-dropdown.hidden { display: none; }
+        #voice-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .mic-pulse { animation: pulse-blue 1.5s infinite; }
+        @keyframes pulse-blue { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 20px rgba(37, 99, 235, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); } }
+        #game-hud { background: linear-gradient(135deg, #2563eb, #4f46e5); color: white; }
+        
+        /* Install Hint */
+        #ios-install-modal { position: fixed; bottom: 40px; left: 20px; right: 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; z-index: 100; box-shadow: 0 10px 40px rgba(0,0,0,0.3); display: none; animation: slideUp 0.4s; }
+        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+</head>
+<body data-theme="light">
+
+    <!-- NAV -->
+    <nav class="sticky top-0 z-30 h-16 bg-[var(--bg-card)] border-b border-[var(--border)] flex items-center justify-between px-4 transition-colors ui-element">
+        <div class="flex items-center gap-2 cursor-pointer active:scale-95 transition-transform shrink-0" onclick="resetHome()">
+            <div class="w-8 h-8 bg-[var(--accent)] text-white rounded-lg flex items-center justify-center font-bold shadow-lg">W</div>
+            <span class="font-bold text-lg tracking-tight hidden sm:block">Wiki<span class="text-[var(--accent)]">App</span></span>
+        </div>
+        <div class="flex-1 max-w-xl mx-4 relative flex items-center gap-2">
+            <!-- SEARCH FORM -->
+            <form action="." onsubmit="handleSearchSubmit(event)" class="relative flex-1">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] w-4 h-4"></i>
+                <input type="search" id="search-input" enterkeyhint="search" class="w-full pl-10 pr-4 py-2.5 bg-[var(--bg-main)] rounded-full border border-[var(--border)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-colors placeholder-[var(--text-secondary)] text-[var(--text-primary)]" placeholder="Search..." autocomplete="off">
+            </form>
+            <button onclick="startVoiceSearch()" class="p-2.5 bg-[var(--bg-main)] active:bg-[var(--border)] rounded-full text-[var(--text-secondary)] hover:text-[var(--accent)] shrink-0"><i data-lucide="mic" class="w-5 h-5"></i></button>
+        </div>
+        <div class="relative">
+            <button onclick="toggleMenu()" id="menu-btn" class="p-2.5 text-[var(--text-secondary)] hover:bg-[var(--bg-main)] active:bg-[var(--border)] rounded-full"><i data-lucide="more-vertical" class="w-5 h-5"></i></button>
+            <div id="menu-dropdown" class="hidden absolute right-0 top-full mt-2 w-48 bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl shadow-xl overflow-hidden z-50">
+                <div class="py-1">
+                    <!-- INSTALL BUTTON (Hidden by default) -->
+                    <button id="install-btn" onclick="triggerInstall()" class="hidden w-full text-left px-4 py-3 text-sm hover:bg-[var(--bg-main)] flex items-center gap-2 text-[var(--accent)] font-medium"><i data-lucide="download" class="w-4 h-4"></i> Install App</button>
+                    <button onclick="fetchRandom(); toggleMenu()" class="w-full text-left px-4 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-main)] flex items-center gap-2"><i data-lucide="dice-5" class="w-4 h-4 text-[var(--text-secondary)]"></i> Random</button>
+                    <button onclick="openGameMenu(); toggleMenu()" class="w-full text-left px-4 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-main)] flex items-center gap-2"><i data-lucide="gamepad-2" class="w-4 h-4 text-[var(--text-secondary)]"></i> Wiki Game</button>
+                    <button onclick="cycleTheme(); toggleMenu()" class="w-full text-left px-4 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-main)] flex items-center gap-2 border-t border-[var(--border)]"><i data-lucide="palette" class="w-4 h-4 text-[var(--text-secondary)]"></i> Theme</button>
+                    <button onclick="checkForUpdates(); toggleMenu()" class="w-full text-left px-4 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-main)] flex items-center gap-2 border-t border-[var(--border)]"><i data-lucide="refresh-cw" class="w-4 h-4 text-[var(--text-secondary)]"></i> Check Updates</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- VOICE -->
+    <div id="voice-overlay" onclick="stopVoiceSearch()">
+        <div class="bg-white rounded-full p-8 mic-pulse mb-6 flex items-center justify-center"><i data-lucide="mic" class="w-12 h-12 text-blue-600"></i></div>
+        <h2 class="text-white text-2xl font-bold mb-2">Listening...</h2>
+        <button onclick="stopVoiceSearch(); event.stopPropagation();" class="mt-8 px-6 py-2 rounded-full bg-white/20 text-white text-sm font-bold backdrop-blur-md border border-white/10">Cancel</button>
+    </div>
+
+    <!-- DASHBOARD -->
+    <main id="main-view" class="max-w-7xl mx-auto p-4 lg:p-8 pb-24">
+        <div id="dashboard" class="space-y-8 fade-in">
+            <section id="featured-section" class="hidden relative w-full h-80 rounded-3xl overflow-hidden shadow-xl cursor-pointer group active:scale-[0.99] transition-transform" onclick="openFeatured()">
+                <img id="featured-img" src="" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                <div class="absolute bottom-0 left-0 p-6 md:p-8 max-w-3xl">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 bg-yellow-500/20 border border-yellow-500/50 rounded-full text-yellow-300 text-xs font-bold uppercase mb-3 backdrop-blur-md"><i data-lucide="star" class="w-3 h-3"></i> Featured</div>
+                    <h1 id="featured-title" class="text-3xl md:text-5xl font-bold text-white mb-2 leading-tight"></h1>
+                    <p id="featured-extract" class="text-slate-200 line-clamp-2"></p>
+                </div>
+            </section>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2">
+                    <h3 class="flex items-center gap-2 text-sm font-bold text-[var(--text-secondary)] uppercase mb-4 ui-element"><i data-lucide="trending-up" class="w-4 h-4"></i> Trending</h3>
+                    <div id="trending-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="col-span-full py-10 text-center opacity-50">Loading...</div></div>
+                </div>
+                <div>
+                    <h3 class="flex items-center gap-2 text-sm font-bold text-[var(--text-secondary)] uppercase mb-4 ui-element"><i data-lucide="calendar" class="w-4 h-4"></i> On This Day</h3>
+                    <div id="otd-list" class="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-2 space-y-1"></div>
+                </div>
+            </div>
+        </div>
+        <div id="search-view" class="hidden fade-in">
+            <h2 class="text-2xl font-bold mb-6 ui-element">Results</h2>
+            <div id="results-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </div>
+    </main>
+
+    <!-- READER -->
+    <div id="overlay" onclick="navBack()"></div>
+    <div id="article-panel">
+        <div id="game-hud" class="hidden p-3 flex justify-between items-center text-white shrink-0 shadow-md z-20 ui-element">
+            <div class="flex flex-col"><span class="text-[10px] uppercase opacity-80 font-bold">Target</span><span id="hud-target" class="font-bold text-lg">...</span></div>
+            <div class="flex items-center gap-4 text-sm"><div class="text-center"><span class="block text-[10px] opacity-80">Clicks</span><b id="hud-clicks" class="text-lg">0</b></div><div class="text-center"><span class="block text-[10px] opacity-80">Time</span><b id="hud-timer" class="text-lg font-mono">00:00</b></div><button onclick="quitGame()" class="bg-white/20 p-1.5 rounded hover:bg-white/30"><i data-lucide="x" class="w-4 h-4"></i></button></div>
+        </div>
+        <div id="reader-toolbar" class="h-14 flex items-center justify-between px-4 border-b border-[var(--border)] bg-[var(--bg-card)] shrink-0 z-10 ui-element">
+            <button onclick="navBack()" id="back-btn" class="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><i data-lucide="arrow-left" class="w-5 h-5"></i> Back</button>
+            <div class="flex gap-2"><button onclick="toggleSpeech()" id="tts-btn" class="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-main)] rounded-full text-[var(--text-secondary)] text-sm font-medium"><i data-lucide="volume-2" class="w-4 h-4"></i> <span id="tts-label">Listen</span></button><a id="ext-link" href="#" target="_blank" class="p-2 text-[var(--text-secondary)] rounded-full"><i data-lucide="external-link" class="w-5 h-5"></i></a></div>
+        </div>
+        <div id="article-scroll" class="flex-1 overflow-y-auto bg-[var(--bg-card)] relative scroll-smooth">
+            <div id="article-hero" class="hidden w-full h-72 relative shrink-0"><img id="article-hero-img" class="w-full h-full object-cover"><div class="absolute inset-0 bg-gradient-to-t from-[var(--bg-card)] to-transparent"></div></div>
+            <div id="loader" class="flex flex-col items-center justify-center py-20"><div class="w-10 h-10 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin"></div></div>
+            <div id="article-container" class="hidden pb-20">
+                <div class="px-6 md:px-10 pt-8 pb-4 max-w-4xl mx-auto">
+                    <h1 id="article-title" class="text-3xl md:text-5xl font-bold mb-6 leading-tight"></h1>
+                    <div class="bg-[var(--accent-soft)] border border-[var(--accent)]/20 rounded-xl p-5 mb-8">
+                        <div class="flex items-center justify-between mb-2 ui-element"><span class="text-xs font-bold text-[var(--accent)] uppercase flex items-center gap-1"><i data-lucide="sparkles" class="w-3 h-3"></i> Summary</span><span class="text-xs font-medium text-[var(--text-secondary)] flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> <span id="read-time">-- min</span></span></div>
+                        <p id="ai-summary" class="text-[var(--text-primary)] text-sm leading-relaxed opacity-90"></p>
+                    </div>
+                </div>
+                <div id="article-body" class="wiki-content max-w-4xl mx-auto px-2 md:px-6"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <div id="game-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden ui-element">
+        <div class="bg-[var(--bg-card)] border border-[var(--border)] p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center mx-4">
+            <div class="w-14 h-14 bg-[var(--accent)] rounded-2xl flex items-center justify-center mx-auto mb-4 text-white shadow-lg"><i data-lucide="trophy" class="w-7 h-7"></i></div>
+            <h2 class="text-2xl font-bold mb-2">Wiki Game</h2>
+            <p class="text-[var(--text-secondary)] text-sm mb-6">Navigate from <b>Start</b> to <b>Target</b>.</p>
+            <div class="bg-[var(--bg-main)] rounded-xl p-4 mb-6 text-left border border-[var(--border)] space-y-2">
+                <div class="flex justify-between"><span class="text-xs font-bold opacity-50">START</span><span id="game-start-t" class="font-bold text-sm truncate w-32 text-right">...</span></div>
+                <div class="h-px bg-[var(--border)]"></div>
+                <div class="flex justify-between"><span class="text-xs font-bold opacity-50">TARGET</span><span id="game-target-t" class="font-bold text-sm truncate w-32 text-right text-[var(--accent)]">...</span></div>
+            </div>
+            <button id="start-game-btn" onclick="startGame()" class="w-full py-3.5 bg-[var(--accent)] text-white font-bold rounded-xl disabled:opacity-50">Start Game</button>
+            <button onclick="document.getElementById('game-modal').classList.add('hidden')" class="mt-4 text-sm text-[var(--text-secondary)] font-medium">Cancel</button>
+        </div>
+    </div>
+    <div id="ios-install-modal">
+        <div class="flex justify-between items-start mb-3"><div><h3 class="font-bold text-lg">Install App</h3><p class="text-sm text-[var(--text-secondary)]">Tap Share, then "Add to Home Screen"</p></div><button onclick="closeInstallHint()" class="p-1 text-[var(--text-secondary)]"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+        <div class="flex items-center gap-3 text-sm font-medium text-[var(--text-primary)]"><span>1. Share <i data-lucide="share" class="w-4 h-4 inline"></i></span><span>2. "Add to Home Screen" <i data-lucide="plus-square" class="w-4 h-4 inline"></i></span></div>
+    </div>
+
+    <script>
+        lucide.createIcons(); const searchInput=document.getElementById('search-input');
+        let featuredTitle="", themes=['light','dark','sepia'], themeIdx=0, confettiFired=false, deferredPrompt;
+        let gameState={active:false,start:null,target:null,clicks:0,startTime:0,timer:null};
+        let ttsData={queue:[],index:0,active:false}; let voiceRec=null;
+        let articleStack = []; // History Stack
+
+        // --- UPDATE CHECKER ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js');
+            });
+        }
+        async function checkForUpdates() {
+            const reg = await navigator.serviceWorker.getRegistration();
+            if(reg) {
+                await reg.update();
+                if(reg.waiting) {
+                    reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    window.location.reload();
+                } else if (reg.installing) {
+                     reg.installing.addEventListener('statechange', (e) => {
+                         if(e.target.state === 'installed') {
+                             e.target.postMessage({ type: 'SKIP_WAITING' });
+                             window.location.reload();
+                         }
+                     });
+                     alert("Update downloading... App will reload shortly.");
+                } else {
+                    alert("App is up to date.");
+                }
+            } else {
+                alert("Updates handled by browser.");
+            }
+        }
+
+        // --- THEME & MENU ---
+        function cycleTheme(){themeIdx=(themeIdx+1)%themes.length; document.body.setAttribute('data-theme',themes[themeIdx]);let m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.name="theme-color";document.head.appendChild(m);}m.content=(themes[themeIdx]==='light'?'#ffffff':(themes[themeIdx]==='dark'?'#1e293b':'#fdf6e3'));}
+        cycleTheme();
+        function toggleMenu() {const m=document.getElementById('menu-dropdown');m.classList.toggle('hidden');}
+        document.addEventListener('click',e=>{const m=document.getElementById('menu-dropdown'),b=document.getElementById('menu-btn');if(!m.classList.contains('hidden')&&!m.contains(e.target)&&!b.contains(e.target))m.classList.add('hidden');});
+
+        // --- VOICE ---
+        async function startVoiceSearch() {
+            if(/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream){alert("Voice Search not supported on iOS.");return;}
+            if (!('webkitSpeechRecognition' in window)) {alert("Not supported.");return;}
+            try { const s=await navigator.mediaDevices.getUserMedia({audio:true}); s.getTracks().forEach(t=>t.stop()); } catch(e) {alert("Please enable mic access.");return;}
+            voiceRec = new webkitSpeechRecognition(); voiceRec.lang='en-US'; voiceRec.continuous=false;
+            voiceRec.onstart=()=>document.getElementById('voice-overlay').style.display='flex';
+            voiceRec.onresult=e=>{const t=e.results[0][0].transcript;searchInput.value=t;stopVoiceSearch();doSearch(t);};
+            voiceRec.onerror=()=>{stopVoiceSearch();}; voiceRec.onend=()=>stopVoiceSearch();
+            voiceRec.start();
+        }
+        function stopVoiceSearch() {document.getElementById('voice-overlay').style.display='none';if(voiceRec)voiceRec.stop();}
+
+        // --- DASHBOARD ---
+        async function loadDashboard(){
+            const now=new Date(), y=now.getFullYear(), m=String(now.getMonth()+1).padStart(2,'0'), d=String(now.getDate()).padStart(2,'0');
+            try{
+                const f=await fetch(`https://en.wikipedia.org/api/rest_v1/feed/featured/${y}/${m}/${d}`).then(r=>r.json());
+                if(f.tfa){
+                    document.getElementById('featured-section').classList.remove('hidden');
+                    document.getElementById('featured-title').innerHTML=f.tfa.titles.display;
+                    document.getElementById('featured-extract').textContent=f.tfa.extract;
+                    if(f.tfa.thumbnail) document.getElementById('featured-img').src=f.tfa.thumbnail.source;
+                    featuredTitle=f.tfa.titles.normalized;
+                }
+            }catch(e){}
+            try{const t=await fetch(`https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access/${y}/${m}/${String(d-1).padStart(2,'0')}`).then(r=>r.json());const g=document.getElementById('trending-grid');g.innerHTML='';t.items[0].articles.filter(a=>!a.article.includes(":")&&a.article!=="Main_Page").slice(0,6).forEach(i=>{g.innerHTML+=`<div onclick="loadArticle('${i.article.replace(/'/g,"\\'")}')" class="bg-[var(--bg-card)] border border-[var(--border)] p-4 rounded-2xl active:scale-95 transition-transform cursor-pointer"><div class="font-bold text-[var(--text-primary)] truncate">${i.article.replace(/_/g,' ')}</div><div class="text-xs text-[var(--text-secondary)] mt-1">${(i.views/1000).toFixed(1)}k views</div></div>`;});}catch(e){}
+            try{const o=await fetch(`https://en.wikipedia.org/api/rest_v1/feed/onthisday/events/${m}/${d}`).then(r=>r.json());const l=document.getElementById('otd-list');l.innerHTML='';o.events.slice(0,5).forEach(e=>{const p=e.pages&&e.pages[0]?e.pages[0].title:null;l.innerHTML+=`<div class="flex gap-3 p-3 rounded-xl active:bg-[var(--border)] transition-colors cursor-pointer" ${p?`onclick="loadArticle('${p.replace(/'/g,"\\'")}')"`:''}><span class="font-bold text-[var(--accent)] text-sm min-w-[3rem]">${e.year}</span><span class="text-sm text-[var(--text-secondary)] line-clamp-2">${e.text}</span></div>`;});}catch(e){}
+        }
+        loadDashboard();
+
+        // --- SEARCH ---
+        let sTimer; searchInput.addEventListener('input',e=>{clearTimeout(sTimer);if(e.target.value.trim())sTimer=setTimeout(()=>doSearch(e.target.value),500);else resetHome();});
+        function handleSearchSubmit(e) { e.preventDefault(); document.getElementById('search-input').blur(); }
+        function resetHome(){document.getElementById('dashboard').classList.remove('hidden');document.getElementById('search-view').classList.add('hidden');}
+        async function doSearch(q){
+            document.getElementById('dashboard').classList.add('hidden');document.getElementById('search-view').classList.remove('hidden');
+            const d=await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&format=json&origin=*&srlimit=12`).then(r=>r.json());
+            const g=document.getElementById('results-grid');g.innerHTML='';
+            d.query.search.forEach(r=>{g.innerHTML+=`<div onclick="loadArticle('${r.title.replace(/'/g,"\\'")}')" class="bg-[var(--bg-card)] p-5 rounded-2xl border border-[var(--border)] active:scale-95 transition-transform cursor-pointer"><h3 class="font-bold text-[var(--accent)] mb-2">${r.title}</h3><p class="text-sm text-[var(--text-secondary)] line-clamp-3">${r.snippet.replace(/<[^>]*>/g,'')}</p></div>`});
+        }
+
+        // --- ARTICLE ---
+        function openFeatured(){if(featuredTitle)loadArticle(featuredTitle);}
+        async function fetchRandom(){const r=await fetch('https://en.wikipedia.org/w/api.php?action=query&list=random&rnnamespace=0&rnlimit=1&format=json&origin=*').then(r=>r.json());loadArticle(r.query.random[0].title);}
+        
+        async function loadArticle(t, push=true){
+            if(push) {
+                articleStack.push(t);
+                history.pushState({articleOpen: true}, null, "");
+            }
+            
+            document.getElementById('overlay').classList.add('active');document.getElementById('article-panel').classList.add('open');
+            document.body.style.overflow='hidden';document.getElementById('article-container').classList.add('hidden');
+            document.getElementById('loader').classList.remove('hidden');document.getElementById('article-hero').classList.add('hidden');
+            document.getElementById('article-scroll').scrollTop=0;confettiFired=false;stopSpeech();
+            
+            try{
+                const m=await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(t)}&prop=extracts|pageimages|info&inprop=url&pithumbsize=1000&explaintext&exintro&format=json&origin=*`).then(r=>r.json());
+                const pid=Object.keys(m.query.pages)[0]; if(pid==="-1")throw new Error(); const i=m.query.pages[pid];
+                document.getElementById('article-title').innerHTML=i.title; document.getElementById('ai-summary').textContent=i.extract||"No summary."; document.getElementById('ext-link').href=i.fullurl;
+                if(i.thumbnail){document.getElementById('article-hero-img').src=i.thumbnail.source;document.getElementById('article-hero').classList.remove('hidden');}
+                
+                const p=await fetch(`https://en.wikipedia.org/w/api.php?action=parse&pageid=${pid}&prop=text&mobileformat=true&format=json&origin=*`).then(r=>r.json());
+                const h=p.parse.text['*']; document.getElementById('read-time').innerText=Math.ceil(h.replace(/<[^>]*>/g,'').split(/\s+/).length/220)+" min";
+                
+                const temp=document.createElement('div'); temp.innerHTML=h;
+                temp.querySelectorAll('.mw-editsection,.reference,.noprint,.hatnote,.sidebar,style,script').forEach(e=>e.remove());
+                // Clean Images
+                temp.querySelectorAll('img').forEach(e=>e.remove());
+                // Wrap Tables
+                temp.querySelectorAll('table').forEach(t=>{ const w=document.createElement('div'); w.className='table-wrapper'; t.parentNode.insertBefore(w,t); w.appendChild(t); });
+
+                const b=document.getElementById('article-body'); b.innerHTML='';
+                const intro=document.createElement('div'); intro.className='px-4 pb-6'; b.appendChild(intro); let cur=intro;
+                Array.from(temp.childNodes).forEach(n=>{
+                    if(n.tagName==='H2'){
+                        const d=document.createElement('details'), s=document.createElement('summary'), c=document.createElement('div');
+                        const idSpan = n.querySelector('.mw-headline'); if(idSpan && idSpan.id) d.id = idSpan.id;
+                        s.innerText=n.innerText; c.className='details-content'; d.appendChild(s); d.appendChild(c); b.appendChild(d); cur=c;
+                    } else cur.appendChild(n.cloneNode(true));
+                });
+                document.getElementById('loader').classList.add('hidden');document.getElementById('article-container').classList.remove('hidden');
+            }catch(e){window.open(`https://en.wikipedia.org/wiki/${encodeURIComponent(t)}`,'_blank');navBack();}
+        }
+
+        // --- NAV BACK LOGIC ---
+        window.addEventListener('popstate', (event) => {
+            if(document.getElementById('article-panel').classList.contains('open')) {
+                navBack(false);
+            }
+        });
+
+        function navBack(modifyHistory = true) {
+            if(gameState.active && !confirm("Quit game?")) {
+                if(modifyHistory) history.pushState({articleOpen: true}, null, "");
+                return;
+            }
+            if(gameState.active) quitGame();
+
+            articleStack.pop(); // remove current
+            
+            if(articleStack.length > 0) {
+                loadArticle(articleStack[articleStack.length-1], false);
+            } else {
+                document.getElementById('article-panel').classList.remove('open');
+                document.getElementById('overlay').classList.remove('active');
+                document.body.style.overflow='auto'; stopSpeech();
+                if(modifyHistory && history.state) history.back();
+            }
+        }
+        document.getElementById('back-btn').addEventListener('contextmenu',e=>{e.preventDefault();articleStack=[];navBack();});
+
+        document.getElementById('article-body').addEventListener('click',e=>{
+            const l=e.target.closest('a'); if(!l)return;
+            const href = l.getAttribute('href');
+            if(href&&href.startsWith('#')){
+                e.preventDefault(); const id=href.substring(1); const el=document.getElementById(id);
+                if(el){ if(el.tagName==='DETAILS')el.open=true; else{const p=el.closest('details');if(p)p.open=true;} el.scrollIntoView({behavior:'smooth'}); }
+                return;
+            }
+            if(href&&href.startsWith('/wiki/')){
+                e.preventDefault(); const t=decodeURIComponent(href.split('/wiki/')[1]);
+                if(gameState.active){gameState.clicks++;document.getElementById('hud-clicks').innerText=gameState.clicks;if(t.toLowerCase().replace(/_/g,' ')===gameState.target.toLowerCase().replace(/_/g,' '))endGame(true);}
+                loadArticle(t);
+            }
+        });
+
+        // --- TOOLS ---
+        function toggleSpeech(){ttsData.active?stopSpeech():startSpeech();}
+        function startSpeech(){ttsData.active=true;updateTTS();const t=document.getElementById('ai-summary').innerText+" "+document.getElementById('article-body').innerText;ttsData.queue=t.match(/[^.!?]+[.!?]+/g)||[t];ttsData.index=0;speakNext();}
+        function speakNext(){if(!ttsData.active||ttsData.index>=ttsData.queue.length){stopSpeech();return;}window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(ttsData.queue[ttsData.index]);u.onend=()=>{if(ttsData.active){ttsData.index++;speakNext();}};u.onerror=()=>{ttsData.index++;speakNext();};window.speechSynthesis.speak(u);}
+        function stopSpeech(){ttsData.active=false;window.speechSynthesis.cancel();updateTTS();}
+        function updateTTS(){const b=document.getElementById('tts-btn'),l=document.getElementById('tts-label');if(ttsData.active){b.classList.add('text-red-600','bg-red-50');l.innerText="Stop";}else{b.classList.remove('text-red-600','bg-red-50');l.innerText="Listen";}}
+        document.getElementById('article-scroll').addEventListener('scroll',e=>{const t=e.target;if(t.scrollTop+t.clientHeight>=t.scrollHeight-50&&!confettiFired&&!gameState.active){confettiFired=true;confetti({particleCount:100});}});
+        
+        async function openGameMenu(){document.getElementById('game-modal').classList.remove('hidden');document.getElementById('start-game-btn').disabled=true;document.getElementById('game-start-t').innerText="...";document.getElementById('game-target-t').innerText="...";const [r1,r2]=await Promise.all([fetch('https://en.wikipedia.org/w/api.php?action=query&list=random&rnnamespace=0&rnlimit=1&format=json&origin=*').then(r=>r.json()),fetch('https://en.wikipedia.org/w/api.php?action=query&list=random&rnnamespace=0&rnlimit=1&format=json&origin=*').then(r=>r.json())]);gameState.start=r1.query.random[0].title;gameState.target=r2.query.random[0].title;document.getElementById('game-start-t').innerText=gameState.start;document.getElementById('game-target-t').innerText=gameState.target;document.getElementById('start-game-btn').disabled=false;}
+        function startGame(){document.getElementById('game-modal').classList.add('hidden');gameState.active=true;gameState.clicks=0;gameState.startTime=Date.now();document.getElementById('game-hud').classList.remove('hidden');document.getElementById('reader-toolbar').classList.add('hidden');document.getElementById('hud-target').innerText=gameState.target;document.getElementById('hud-clicks').innerText="0";if(gameState.timer)clearInterval(gameState.timer);gameState.timer=setInterval(()=>{const d=Math.floor((Date.now()-gameState.startTime)/1000);document.getElementById('hud-timer').innerText=`${String(Math.floor(d/60)).padStart(2,'0')}:${String(d%60).padStart(2,'0')}`;},1000);loadArticle(gameState.start);}
+        function endGame(w){clearInterval(gameState.timer);gameState.active=false;if(w){confetti({particleCount:300});alert(`🎉 VICTORY!\n\nTarget: ${gameState.target}\nClicks: ${gameState.clicks}`);}quitGame();}
+        function quitGame(){clearInterval(gameState.timer);gameState.active=false;document.getElementById('game-hud').classList.add('hidden');document.getElementById('reader-toolbar').classList.remove('hidden');articleStack=[];navBack();}
+        window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;if(!window.matchMedia('(display-mode: standalone)').matches)document.getElementById('install-btn').classList.remove('hidden');});
+        function triggerInstall(){if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(r=>{if(r.outcome==='accepted')document.getElementById('install-btn').classList.add('hidden');deferredPrompt=null;});}else if(/iPad|iPhone|iPod/.test(navigator.userAgent))document.getElementById('ios-install-modal').style.display="block";toggleMenu();}
+        function closeInstallHint(){document.getElementById('ios-install-modal').style.display="none";}
+    </script>
+</body>
+</html>
