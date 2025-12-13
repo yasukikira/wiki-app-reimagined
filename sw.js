@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wiki-modern-v4-stable.v4'; // Version Bump
+const CACHE_NAME = 'wiki-modern-v5'; // Version Bump
 const urlsToCache = [
   './',
   './index.html',
