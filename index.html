@@ -23,7 +23,7 @@
         /* VARIABLES */
         :root {
             --bg-main: #f8fafc; --bg-card: #ffffff; --text-primary: #0f172a; --text-secondary: #64748b;
-            --border: #e2e8f0; --accent: #2563eb; --accent-soft: #eff6ff; --font-serif: 'Merriweather', serif;
+            --border: #e2e8f0; --accent: #2563eb; --accent-soft: #eff6ff; --font-serif: 'Merriweather', serif; --font-sans: 'Inter', sans-serif;
             --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
         [data-theme="dark"] { --bg-main: #0f172a; --bg-card: #1e293b; --text-primary: #f8fafc; --text-secondary: #94a3b8; --border: #334155; --accent: #60a5fa; --accent-soft: #172554; }
@@ -48,6 +48,7 @@
 
         /* CONTENT */
         .wiki-content { font-family: var(--font-serif); font-size: 1.15rem; line-height: 1.85; }
+        .wiki-content.font-sans { font-family: var(--font-sans); }
         .wiki-content p { margin-bottom: 1.25rem; }
         .wiki-content a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; font-weight: 500; }
         
@@ -396,7 +397,7 @@
             if(push) { articleStack.push(t); history.pushState({articleOpen: true}, null, ""); }
             currentArticleTitle = t;
             
-            // SET EXTERNAL LINK IMMEDIATELY (Fix)
+            // SET EXTERNAL LINK IMMEDIATELY
             const extUrl = `https://${currentLang}.wikipedia.org/wiki/${encodeURIComponent(t)}`;
             document.getElementById('ext-link').href = extUrl;
             document.getElementById('error-link').href = extUrl;
@@ -408,28 +409,9 @@
             document.getElementById('article-scroll').scrollTop=0;confettiFired=false;stopSpeech();
             updateBookmarkUI();
             
-            // TIMEOUT PROTECTION (Fix)
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
-
             try{
-                // 1. Metadata
-                const m=await fetch(`https://${currentLang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(t)}&prop=extracts|pageimages|info|revisions&inprop=url&rvprop=timestamp|user&pithumbsize=1000&explaintext&exintro&format=json&origin=*`, {signal: controller.signal}).then(r=>r.json());
-                const pid=Object.keys(m.query.pages)[0]; if(pid==="-1")throw new Error(); const i=m.query.pages[pid];
-                
-                document.getElementById('article-title').innerHTML=i.title; 
-                document.getElementById('ai-summary').textContent=i.extract||"No summary."; 
-                
-                if(i.revisions && i.revisions.length > 0) {
-                    const d = new Date(i.revisions[0].timestamp).toLocaleDateString();
-                    document.getElementById('article-meta').innerHTML = `<i data-lucide="edit-3" class="w-3 h-3"></i> Last edited by <b>${i.revisions[0].user}</b> on ${d}`;
-                    lucide.createIcons();
-                }
-
-                if(i.thumbnail){document.getElementById('article-hero-img').src=i.thumbnail.source;document.getElementById('article-hero').classList.remove('hidden');}
-                
-                // 2. Content
-                const p=await fetch(`https://${currentLang}.wikipedia.org/w/api.php?action=parse&pageid=${pid}&prop=text&mobileformat=true&format=json&origin=*`, {signal: controller.signal}).then(r=>r.json());
+                // 1. CONTENT (CRITICAL)
+                const p=await fetch(`https://${currentLang}.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(t)}&prop=text&mobileformat=true&format=json&origin=*`).then(r=>r.json());
                 const h=p.parse.text['*']; document.getElementById('read-time').innerText=Math.ceil(h.replace(/<[^>]*>/g,'').split(/\s+/).length/220)+" min";
                 
                 const temp=document.createElement('div'); temp.innerHTML=h;
@@ -447,32 +429,45 @@
                     } else cur.appendChild(n.cloneNode(true));
                 });
 
-                clearTimeout(timeoutId);
                 document.getElementById('loader').classList.add('hidden');document.getElementById('article-container').classList.remove('hidden');
 
-                // 3. Smart "Read Next" (Safe Fetch)
-                try {
+                // 2. METADATA (BACKGROUND)
+                fetch(`https://${currentLang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(t)}&prop=extracts|pageimages|info|revisions&inprop=url&rvprop=timestamp|user&pithumbsize=1000&explaintext&exintro&format=json&origin=*`)
+                .then(r=>r.json()).then(m => {
+                    const pid=Object.keys(m.query.pages)[0]; const i=m.query.pages[pid];
+                    document.getElementById('article-title').innerHTML=i.title; 
+                    document.getElementById('ai-summary').textContent=i.extract||"No summary."; 
+                    if(i.revisions && i.revisions.length > 0) {
+                        const d = new Date(i.revisions[0].timestamp).toLocaleDateString();
+                        document.getElementById('article-meta').innerHTML = `<i data-lucide="edit-3" class="w-3 h-3"></i> Last edited by <b>${i.revisions[0].user}</b> on ${d}`;
+                        lucide.createIcons();
+                    }
+                    if(i.thumbnail){document.getElementById('article-hero-img').src=i.thumbnail.source;document.getElementById('article-hero').classList.remove('hidden');}
+                }).catch(e=>console.log(e));
+
+                // 3. RELATED (BACKGROUND)
+                setTimeout(() => {
                     const links = Array.from(temp.querySelectorAll('a[href^="/wiki/"]'))
                         .map(a => decodeURIComponent(a.getAttribute('href').split('/wiki/')[1]))
                         .filter(t => !t.includes(':')); 
-                    
                     const uniqueLinks = [...new Set(links)];
                     const picks = uniqueLinks.sort(() => 0.5 - Math.random()).slice(0, 4);
                     const rGrid = document.getElementById('related-grid'); rGrid.innerHTML = '';
 
                     if(picks.length > 0) {
-                        const relData = await fetch(`https://${currentLang}.wikipedia.org/w/api.php?action=query&titles=${picks.map(encodeURIComponent).join('|')}&prop=pageimages|info&pithumbsize=200&format=json&origin=*`).then(r=>r.json());
-                        const pages = Object.values(relData.query.pages);
-                        
-                        pages.forEach(rp => {
-                            rGrid.innerHTML += `
-                            <div onclick="loadArticle('${rp.title.replace(/'/g,"\\'")}')" class="bg-[var(--bg-main)] border border-[var(--border)] p-4 rounded-xl cursor-pointer hover:border-[var(--accent)] transition-colors flex gap-3 items-center">
-                                ${rp.thumbnail ? `<img src="${rp.thumbnail.source}" class="w-12 h-12 rounded-lg object-cover bg-gray-200 shrink-0">` : ''}
-                                <div><h4 class="font-bold text-sm text-[var(--text-primary)] line-clamp-2">${rp.title}</h4></div>
-                            </div>`;
+                        fetch(`https://${currentLang}.wikipedia.org/w/api.php?action=query&titles=${picks.map(encodeURIComponent).join('|')}&prop=pageimages|info&pithumbsize=200&format=json&origin=*`)
+                        .then(r=>r.json()).then(relData => {
+                            const pages = Object.values(relData.query.pages);
+                            pages.forEach(rp => {
+                                rGrid.innerHTML += `
+                                <div onclick="loadArticle('${rp.title.replace(/'/g,"\\'")}')" class="bg-[var(--bg-main)] border border-[var(--border)] p-4 rounded-xl cursor-pointer hover:border-[var(--accent)] transition-colors flex gap-3 items-center">
+                                    ${rp.thumbnail ? `<img src="${rp.thumbnail.source}" class="w-12 h-12 rounded-lg object-cover bg-gray-200 shrink-0">` : ''}
+                                    <div><h4 class="font-bold text-sm text-[var(--text-primary)] line-clamp-2">${rp.title}</h4></div>
+                                </div>`;
+                            });
                         });
                     }
-                } catch(err) { console.log("Related failed", err); }
+                }, 100);
 
             }catch(e){
                 document.getElementById('loader').classList.add('hidden');
