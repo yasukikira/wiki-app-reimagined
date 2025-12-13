@@ -1,5 +1,3 @@
-</body>
-</html>
 const CACHE_NAME = 'wiki-modern-v28'; // Version Bump
 const urlsToCache = [
   './',
