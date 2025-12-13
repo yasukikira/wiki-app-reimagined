@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wiki-modern-v28'; // Version Bump
+const CACHE_NAME = 'wiki-modern-v29';
 const urlsToCache = [
   './',
   './index.html',
@@ -11,12 +11,11 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Network First for API calls
+  // STRICT: Never cache API calls. Always go to network.
   if (event.request.url.includes('wikipedia.org')) {
-    event.respondWith(fetch(event.request).catch(() => new Response(JSON.stringify({ error: 'Network Error' }))));
+    event.respondWith(fetch(event.request));
     return;
   }
-  // Cache First for App Files
   event.respondWith(
     caches.match(event.request).then((response) => {
       return response || fetch(event.request);
