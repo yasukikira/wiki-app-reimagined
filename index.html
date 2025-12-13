@@ -23,7 +23,7 @@
         /* VARIABLES */
         :root {
             --bg-main: #f8fafc; --bg-card: #ffffff; --text-primary: #0f172a; --text-secondary: #64748b;
-            --border: #e2e8f0; --accent: #2563eb; --accent-soft: #eff6ff; --font-serif: 'Merriweather', serif; --font-sans: 'Inter', sans-serif;
+            --border: #e2e8f0; --accent: #2563eb; --accent-soft: #eff6ff; --font-serif: 'Merriweather', serif;
             --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
         [data-theme="dark"] { --bg-main: #0f172a; --bg-card: #1e293b; --text-primary: #f8fafc; --text-secondary: #94a3b8; --border: #334155; --accent: #60a5fa; --accent-soft: #172554; }
@@ -48,7 +48,6 @@
 
         /* CONTENT */
         .wiki-content { font-family: var(--font-serif); font-size: 1.15rem; line-height: 1.85; }
-        .wiki-content.font-sans { font-family: var(--font-sans); }
         .wiki-content p { margin-bottom: 1.25rem; }
         .wiki-content a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; font-weight: 500; }
         
@@ -196,7 +195,7 @@
                 <button onclick="shareArticle()" class="p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-main)] rounded-full"><i data-lucide="share-2" class="w-5 h-5"></i></button>
                 <!-- TTS -->
                 <button onclick="toggleSpeech()" id="tts-btn" class="p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-main)] rounded-full"><i data-lucide="volume-2" class="w-5 h-5"></i></button>
-                <!-- EXTERNAL LINK (Fixed) -->
+                <!-- EXTERNAL LINK -->
                 <a id="ext-link" href="#" target="_blank" class="p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-main)] rounded-full" title="Open in Wikipedia"><i data-lucide="external-link" class="w-5 h-5"></i></a>
             </div>
         </div>
@@ -409,9 +408,13 @@
             document.getElementById('article-scroll').scrollTop=0;confettiFired=false;stopSpeech();
             updateBookmarkUI();
             
+            // TIMEOUT PROTECTION
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
+
             try{
                 // 1. CONTENT (CRITICAL)
-                const p=await fetch(`https://${currentLang}.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(t)}&prop=text&mobileformat=true&format=json&origin=*`).then(r=>r.json());
+                const p=await fetch(`https://${currentLang}.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(t)}&prop=text&mobileformat=true&format=json&origin=*`, {signal: controller.signal}).then(r=>r.json());
                 const h=p.parse.text['*']; document.getElementById('read-time').innerText=Math.ceil(h.replace(/<[^>]*>/g,'').split(/\s+/).length/220)+" min";
                 
                 const temp=document.createElement('div'); temp.innerHTML=h;
@@ -429,6 +432,7 @@
                     } else cur.appendChild(n.cloneNode(true));
                 });
 
+                clearTimeout(timeoutId);
                 document.getElementById('loader').classList.add('hidden');document.getElementById('article-container').classList.remove('hidden');
 
                 // 2. METADATA (BACKGROUND)
