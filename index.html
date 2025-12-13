@@ -50,7 +50,23 @@
         .wiki-content { font-family: var(--font-serif); font-size: 1.15rem; line-height: 1.85; }
         .wiki-content p { margin-bottom: 1.25rem; }
         .wiki-content a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; font-weight: 500; }
-        .wiki-content img { border-radius: 0.75rem; max-width: 100%; height: auto; display: block; margin: 1.5rem auto; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        
+        /* --- IMAGE TOGGLE LOGIC --- */
+        /* Default: Images Hidden (Clean Reading) */
+        .wiki-content img, .wiki-content .thumb { display: none !important; }
+        
+        /* Mode: Images Visible (Neon/Themed) */
+        body.show-images .wiki-content img, body.show-images .wiki-content .thumb { 
+            display: block !important; 
+            border-radius: 12px; 
+            max-width: 100%; 
+            height: auto; 
+            margin: 1.5rem auto; 
+            /* Themed Neon Border */
+            border: 2px solid var(--accent);
+            box-shadow: 0 0 15px var(--accent-soft), 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
         
         /* Tables */
         .table-wrapper { overflow-x: auto; margin: 1.5rem 0; border-radius: 0.75rem; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); background: var(--bg-main); }
@@ -98,17 +114,24 @@
             <button onclick="startVoiceSearch()" class="p-2.5 bg-[var(--bg-main)] active:bg-[var(--border)] rounded-full text-[var(--text-secondary)] hover:text-[var(--accent)] shrink-0"><i data-lucide="mic" class="w-5 h-5"></i></button>
         </div>
         <div class="relative flex items-center gap-1">
+            <!-- Language Button -->
+            <button onclick="openLangMenu()" class="p-2.5 text-[var(--text-secondary)] hover:bg-[var(--bg-main)] active:bg-[var(--border)] rounded-full transition-colors relative">
+                <i data-lucide="globe" class="w-5 h-5"></i>
+                <span id="lang-badge" class="absolute top-1 right-1 text-[8px] font-bold bg-[var(--accent)] text-white px-1 rounded">EN</span>
+            </button>
+            
             <button onclick="toggleMenu()" id="menu-btn" class="p-2.5 text-[var(--text-secondary)] hover:bg-[var(--bg-main)] active:bg-[var(--border)] rounded-full"><i data-lucide="more-vertical" class="w-5 h-5"></i></button>
             
             <div id="menu-dropdown" class="hidden absolute right-0 top-full mt-2 w-56 bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl shadow-xl overflow-hidden z-50">
                 <div class="py-1">
-                    <!-- Language (Prominent) -->
-                    <button onclick="openLangMenu(); toggleMenu()" class="w-full text-left px-4 py-3 text-sm bg-[var(--accent-soft)] text-[var(--accent)] hover:brightness-95 flex items-center justify-between font-bold border-b border-[var(--border)]">
-                        <span class="flex items-center gap-2"><i data-lucide="globe" class="w-4 h-4"></i> Language</span>
-                        <span id="lang-badge" class="text-[10px] bg-[var(--bg-card)] px-1.5 py-0.5 rounded border border-[var(--accent)]">EN</span>
+                    <button id="install-btn" onclick="triggerInstall()" class="hidden w-full text-left px-4 py-3 text-sm hover:bg-[var(--bg-main)] flex items-center gap-2 text-[var(--accent)] font-medium"><i data-lucide="download" class="w-4 h-4"></i> Install App</button>
+                    
+                    <!-- IMAGE TOGGLE -->
+                    <button onclick="toggleImages(); toggleMenu()" class="w-full text-left px-4 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-main)] flex items-center justify-between">
+                        <span class="flex items-center gap-2"><i data-lucide="image" class="w-4 h-4 text-[var(--text-secondary)]"></i> Show Images</span>
+                        <div id="img-toggle-status" class="w-2 h-2 rounded-full bg-gray-300"></div>
                     </button>
 
-                    <button id="install-btn" onclick="triggerInstall()" class="hidden w-full text-left px-4 py-3 text-sm hover:bg-[var(--bg-main)] flex items-center gap-2 text-[var(--accent)] font-medium"><i data-lucide="download" class="w-4 h-4"></i> Install App</button>
                     <button onclick="fetchRandom(); toggleMenu()" class="w-full text-left px-4 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-main)] flex items-center gap-2"><i data-lucide="dice-5" class="w-4 h-4 text-[var(--text-secondary)]"></i> Random</button>
                     <button onclick="openGameMenu(); toggleMenu()" class="w-full text-left px-4 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-main)] flex items-center gap-2"><i data-lucide="gamepad-2" class="w-4 h-4 text-[var(--text-secondary)]"></i> Wiki Game</button>
                     <button onclick="cycleTheme(); toggleMenu()" class="w-full text-left px-4 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-main)] flex items-center gap-2 border-t border-[var(--border)]"><i data-lucide="palette" class="w-4 h-4 text-[var(--text-secondary)]"></i> Theme</button>
@@ -227,6 +250,24 @@
         const langs = { 'en': 'English', 'es': 'Español', 'fr': 'Français', 'de': 'Deutsch', 'ja': '日本語', 'ru': 'Русский', 'hi': 'हिन्दी', 'zh': '中文', 'it': 'Italiano', 'pt': 'Português' };
         document.getElementById('lang-badge').innerText = currentLang.toUpperCase();
 
+        // IMAGE TOGGLE CONFIG
+        let showImages = localStorage.getItem('wiki_images') !== 'false'; // Default true
+        function updateImageMode() {
+            if(showImages) {
+                document.body.classList.add('show-images');
+                document.getElementById('img-toggle-status').className = "w-2 h-2 rounded-full bg-[var(--accent)]";
+            } else {
+                document.body.classList.remove('show-images');
+                document.getElementById('img-toggle-status').className = "w-2 h-2 rounded-full bg-gray-300";
+            }
+        }
+        function toggleImages() {
+            showImages = !showImages;
+            localStorage.setItem('wiki_images', showImages);
+            updateImageMode();
+        }
+        updateImageMode(); // Init
+
         // --- UPDATE CHECKER ---
         if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js'); }); }
         async function checkForUpdates() {
@@ -332,7 +373,8 @@
                 
                 const temp=document.createElement('div'); temp.innerHTML=h;
                 temp.querySelectorAll('.mw-editsection,.reference,.noprint,.hatnote,.sidebar,style,script').forEach(e=>e.remove());
-                temp.querySelectorAll('img').forEach(e=>e.remove());
+                // Note: We do NOT remove images here anymore. CSS handles visibility.
+                temp.querySelectorAll('img').forEach(i=>{ if(i.src.startsWith('//'))i.src='https:'+i.src; });
                 temp.querySelectorAll('table').forEach(t=>{ const w=document.createElement('div'); w.className='table-wrapper'; t.parentNode.insertBefore(w,t); w.appendChild(t); });
 
                 const b=document.getElementById('article-body'); b.innerHTML='';
@@ -350,7 +392,7 @@
                 // 3. Smart "Read Next" (Random Contextual Links)
                 const links = Array.from(temp.querySelectorAll('a[href^="/wiki/"]'))
                     .map(a => decodeURIComponent(a.getAttribute('href').split('/wiki/')[1]))
-                    .filter(t => !t.includes(':')); // Filter out Special:, File:, etc.
+                    .filter(t => !t.includes(':')); 
                 
                 const uniqueLinks = [...new Set(links)];
                 const picks = uniqueLinks.sort(() => 0.5 - Math.random()).slice(0, 4);
