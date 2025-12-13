@@ -1,43 +1,33 @@
-const CACHE_NAME = 'wiki-modern-v4-stable.v3'; // Updated version
+const CACHE_NAME = 'wiki-modern-v4-stable.v4'; // Version Bump
 const urlsToCache = [
   './',
   './index.html',
   './manifest.json'
 ];
 
-// 1. Install: Cache files
 self.addEventListener('install', (event) => {
-  self.skipWaiting(); // Forces the new SW to activate immediately
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        return cache.addAll(urlsToCache);
-      })
-  );
+  self.skipWaiting(); // Force activation
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache)));
 });
 
-// 2. Fetch: Serve from cache, fall back to network
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        return response || fetch(event.request);
-      })
-  );
-});
+  // 1. If it's an API call (cross-origin), go straight to network. Do not cache.
+  if (!event.request.url.startsWith(self.location.origin)) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
 
-// 3. Activate: Clean up old caches (v1)
-self.addEventListener('activate', (event) => {
-  const cacheWhitelist = [CACHE_NAME];
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
+  // 2. If it's an app file, check cache first.
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      return response || fetch(event.request);
     })
   );
+});
+
+self.addEventListener('activate', (event) => {
+  const cacheWhitelist = [CACHE_NAME];
+  event.waitUntil(caches.keys().then((cacheNames) => Promise.all(cacheNames.map((cacheName) => {
+    if (cacheWhitelist.indexOf(cacheName) === -1) return caches.delete(cacheName);
+  }))));
 });
