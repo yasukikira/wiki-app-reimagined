@@ -23,7 +23,7 @@
         /* VARIABLES */
         :root {
             --bg-main: #f8fafc; --bg-card: #ffffff; --text-primary: #0f172a; --text-secondary: #64748b;
-            --border: #e2e8f0; --accent: #2563eb; --accent-soft: #eff6ff; --font-serif: 'Merriweather', serif;
+            --border: #e2e8f0; --accent: #2563eb; --accent-soft: #eff6ff; --font-serif: 'Merriweather', serif; --font-sans: 'Inter', sans-serif;
             --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
         [data-theme="dark"] { --bg-main: #0f172a; --bg-card: #1e293b; --text-primary: #f8fafc; --text-secondary: #94a3b8; --border: #334155; --accent: #60a5fa; --accent-soft: #172554; }
@@ -48,24 +48,15 @@
 
         /* CONTENT */
         .wiki-content { font-family: var(--font-serif); font-size: 1.15rem; line-height: 1.85; }
+        .wiki-content.font-sans { font-family: var(--font-sans); }
         .wiki-content p { margin-bottom: 1.25rem; }
         .wiki-content a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; font-weight: 500; }
         
-        /* --- IMAGE TOGGLE LOGIC --- */
-        /* Default: Images Hidden (Clean Reading) */
+        /* Image Toggle Logic */
         .wiki-content img, .wiki-content .thumb { display: none !important; }
-        
-        /* Mode: Images Visible (Neon/Themed) */
         body.show-images .wiki-content img, body.show-images .wiki-content .thumb { 
-            display: block !important; 
-            border-radius: 12px; 
-            max-width: 100%; 
-            height: auto; 
-            margin: 1.5rem auto; 
-            /* Themed Neon Border */
-            border: 2px solid var(--accent);
-            box-shadow: 0 0 15px var(--accent-soft), 0 4px 6px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
+            display: block !important; border-radius: 12px; max-width: 100%; height: auto; margin: 1.5rem auto; 
+            border: 2px solid var(--accent); box-shadow: 0 0 15px var(--accent-soft);
         }
         
         /* Tables */
@@ -82,16 +73,16 @@
         .details-content { padding: 0.5rem 1rem 2rem 1rem; }
 
         /* Components */
-        #menu-dropdown { transform-origin: top right; transition: transform 0.2s, opacity 0.2s; }
-        #menu-dropdown.hidden { display: none; }
+        #menu-dropdown, #font-dropdown { transform-origin: top right; transition: transform 0.2s, opacity 0.2s; }
+        #menu-dropdown.hidden, #font-dropdown.hidden { display: none; }
         #voice-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; }
         .mic-pulse { animation: pulse-blue 1.5s infinite; }
         @keyframes pulse-blue { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 20px rgba(37, 99, 235, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); } }
         #game-hud { background: linear-gradient(135deg, #2563eb, #4f46e5); color: white; }
         
-        /* Language Modal */
-        #lang-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 100; display: none; align-items: center; justify-content: center; }
-        #lang-content { background: var(--bg-card); width: 90%; max-width: 350px; border-radius: 24px; padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); transform: scale(0.95); transition: transform 0.2s; }
+        /* Modals */
+        .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 100; display: none; align-items: center; justify-content: center; }
+        .modal-content { background: var(--bg-card); width: 90%; max-width: 350px; border-radius: 24px; padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); transform: scale(0.95); transition: transform 0.2s; max-height: 80vh; overflow-y: auto; }
         
         /* Install Hint */
         #ios-install-modal { position: fixed; bottom: 40px; left: 20px; right: 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; z-index: 100; box-shadow: 0 10px 40px rgba(0,0,0,0.3); display: none; animation: slideUp 0.4s; }
@@ -114,24 +105,20 @@
             <button onclick="startVoiceSearch()" class="p-2.5 bg-[var(--bg-main)] active:bg-[var(--border)] rounded-full text-[var(--text-secondary)] hover:text-[var(--accent)] shrink-0"><i data-lucide="mic" class="w-5 h-5"></i></button>
         </div>
         <div class="relative flex items-center gap-1">
-            <!-- Language Button -->
             <button onclick="openLangMenu()" class="p-2.5 text-[var(--text-secondary)] hover:bg-[var(--bg-main)] active:bg-[var(--border)] rounded-full transition-colors relative">
                 <i data-lucide="globe" class="w-5 h-5"></i>
                 <span id="lang-badge" class="absolute top-1 right-1 text-[8px] font-bold bg-[var(--accent)] text-white px-1 rounded">EN</span>
             </button>
-            
             <button onclick="toggleMenu()" id="menu-btn" class="p-2.5 text-[var(--text-secondary)] hover:bg-[var(--bg-main)] active:bg-[var(--border)] rounded-full"><i data-lucide="more-vertical" class="w-5 h-5"></i></button>
             
             <div id="menu-dropdown" class="hidden absolute right-0 top-full mt-2 w-56 bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl shadow-xl overflow-hidden z-50">
                 <div class="py-1">
                     <button id="install-btn" onclick="triggerInstall()" class="hidden w-full text-left px-4 py-3 text-sm hover:bg-[var(--bg-main)] flex items-center gap-2 text-[var(--accent)] font-medium"><i data-lucide="download" class="w-4 h-4"></i> Install App</button>
-                    
-                    <!-- IMAGE TOGGLE -->
+                    <button onclick="openLibrary(); toggleMenu()" class="w-full text-left px-4 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-main)] flex items-center gap-2"><i data-lucide="heart" class="w-4 h-4 text-[var(--text-secondary)]"></i> My Library</button>
                     <button onclick="toggleImages(); toggleMenu()" class="w-full text-left px-4 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-main)] flex items-center justify-between">
                         <span class="flex items-center gap-2"><i data-lucide="image" class="w-4 h-4 text-[var(--text-secondary)]"></i> Show Images</span>
                         <div id="img-toggle-status" class="w-2 h-2 rounded-full bg-gray-300"></div>
                     </button>
-
                     <button onclick="fetchRandom(); toggleMenu()" class="w-full text-left px-4 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-main)] flex items-center gap-2"><i data-lucide="dice-5" class="w-4 h-4 text-[var(--text-secondary)]"></i> Random</button>
                     <button onclick="openGameMenu(); toggleMenu()" class="w-full text-left px-4 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-main)] flex items-center gap-2"><i data-lucide="gamepad-2" class="w-4 h-4 text-[var(--text-secondary)]"></i> Wiki Game</button>
                     <button onclick="cycleTheme(); toggleMenu()" class="w-full text-left px-4 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-main)] flex items-center gap-2 border-t border-[var(--border)]"><i data-lucide="palette" class="w-4 h-4 text-[var(--text-secondary)]"></i> Theme</button>
@@ -148,14 +135,10 @@
         <button onclick="stopVoiceSearch(); event.stopPropagation();" class="mt-8 px-6 py-2 rounded-full bg-white/20 text-white text-sm font-bold backdrop-blur-md border border-white/10">Cancel</button>
     </div>
 
-    <!-- LANGUAGE MODAL -->
-    <div id="lang-modal" onclick="closeLangMenu()">
-        <div id="lang-content" onclick="event.stopPropagation()">
-            <h3 class="text-xl font-bold mb-4 text-[var(--text-primary)]">Select Language</h3>
-            <div class="grid grid-cols-2 gap-3" id="lang-grid"></div>
-            <button onclick="closeLangMenu()" class="mt-6 w-full py-3 rounded-xl bg-[var(--bg-main)] text-[var(--text-secondary)] font-medium">Cancel</button>
-        </div>
-    </div>
+    <!-- MODALS -->
+    <div id="lang-modal" class="modal-bg" onclick="closeLangMenu()"><div class="modal-content" onclick="event.stopPropagation()"><h3 class="text-xl font-bold mb-4 text-[var(--text-primary)]">Select Language</h3><div class="grid grid-cols-2 gap-3" id="lang-grid"></div><button onclick="closeLangMenu()" class="mt-6 w-full py-3 rounded-xl bg-[var(--bg-main)] text-[var(--text-secondary)] font-medium">Cancel</button></div></div>
+    
+    <div id="library-modal" class="modal-bg" onclick="closeLibrary()"><div class="modal-content" onclick="event.stopPropagation()"><h3 class="text-xl font-bold mb-4 text-[var(--text-primary)]">My Library</h3><div id="library-list" class="space-y-2"></div><button onclick="closeLibrary()" class="mt-6 w-full py-3 rounded-xl bg-[var(--bg-main)] text-[var(--text-secondary)] font-medium">Close</button></div></div>
 
     <!-- DASHBOARD -->
     <main id="main-view" class="max-w-7xl mx-auto p-4 lg:p-8 pb-24">
@@ -195,7 +178,27 @@
         </div>
         <div id="reader-toolbar" class="h-14 flex items-center justify-between px-4 border-b border-[var(--border)] bg-[var(--bg-card)] shrink-0 z-10 ui-element">
             <button onclick="navBack()" id="back-btn" class="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><i data-lucide="arrow-left" class="w-5 h-5"></i> Back</button>
-            <div class="flex gap-2"><button onclick="toggleSpeech()" id="tts-btn" class="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-main)] rounded-full text-[var(--text-secondary)] text-sm font-medium"><i data-lucide="volume-2" class="w-4 h-4"></i> <span id="tts-label">Listen</span></button><a id="ext-link" href="#" target="_blank" class="p-2 text-[var(--text-secondary)] rounded-full"><i data-lucide="external-link" class="w-5 h-5"></i></a></div>
+            <div class="flex gap-1">
+                <!-- FONT -->
+                <div class="relative">
+                    <button onclick="toggleFontMenu()" class="p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-main)] rounded-full"><i data-lucide="type" class="w-5 h-5"></i></button>
+                    <div id="font-dropdown" class="hidden absolute right-0 top-full mt-2 w-40 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl shadow-xl p-3 z-50">
+                        <div class="flex justify-between mb-3">
+                            <button onclick="changeFontSize(-1)" class="p-2 bg-[var(--bg-main)] rounded hover:bg-[var(--border)]">A-</button>
+                            <button onclick="changeFontSize(1)" class="p-2 bg-[var(--bg-main)] rounded hover:bg-[var(--border)]">A+</button>
+                        </div>
+                        <button onclick="toggleFontFamily()" class="w-full py-2 bg-[var(--bg-main)] rounded text-xs font-bold uppercase hover:bg-[var(--border)]">Serif / Sans</button>
+                    </div>
+                </div>
+                <!-- BOOKMARK -->
+                <button onclick="toggleBookmark()" id="bookmark-btn" class="p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-main)] rounded-full"><i data-lucide="heart" class="w-5 h-5"></i></button>
+                <!-- SHARE -->
+                <button onclick="shareArticle()" class="p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-main)] rounded-full"><i data-lucide="share-2" class="w-5 h-5"></i></button>
+                <!-- TTS -->
+                <button onclick="toggleSpeech()" id="tts-btn" class="p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-main)] rounded-full"><i data-lucide="volume-2" class="w-5 h-5"></i></button>
+                <!-- EXTERNAL LINK (Restored) -->
+                <a id="ext-link" href="#" target="_blank" class="p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-main)] rounded-full" title="Open in Wikipedia"><i data-lucide="external-link" class="w-5 h-5"></i></a>
+            </div>
         </div>
         <div id="article-scroll" class="flex-1 overflow-y-auto bg-[var(--bg-card)] relative scroll-smooth">
             <div id="article-hero" class="hidden w-full h-72 relative shrink-0"><img id="article-hero-img" class="w-full h-full object-cover"><div class="absolute inset-0 bg-gradient-to-t from-[var(--bg-card)] to-transparent"></div></div>
@@ -218,7 +221,7 @@
         </div>
     </div>
 
-    <!-- MODALS -->
+    <!-- GAME MODAL -->
     <div id="game-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden ui-element">
         <div class="bg-[var(--bg-card)] border border-[var(--border)] p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center mx-4">
             <div class="w-14 h-14 bg-[var(--accent)] rounded-2xl flex items-center justify-center mx-auto mb-4 text-white shadow-lg"><i data-lucide="trophy" class="w-7 h-7"></i></div>
@@ -245,28 +248,68 @@
         let ttsData={queue:[],index:0,active:false}; let voiceRec=null;
         let articleStack = []; 
         
-        // LANGUAGE CONFIG
+        // CONFIG
         let currentLang = localStorage.getItem('wiki_lang') || 'en';
         const langs = { 'en': 'English', 'es': 'Español', 'fr': 'Français', 'de': 'Deutsch', 'ja': '日本語', 'ru': 'Русский', 'hi': 'हिन्दी', 'zh': '中文', 'it': 'Italiano', 'pt': 'Português' };
         document.getElementById('lang-badge').innerText = currentLang.toUpperCase();
 
-        // IMAGE TOGGLE CONFIG
-        let showImages = localStorage.getItem('wiki_images') !== 'false'; // Default true
+        let showImages = localStorage.getItem('wiki_images') !== 'false';
         function updateImageMode() {
-            if(showImages) {
-                document.body.classList.add('show-images');
-                document.getElementById('img-toggle-status').className = "w-2 h-2 rounded-full bg-[var(--accent)]";
+            if(showImages) { document.body.classList.add('show-images'); document.getElementById('img-toggle-status').className = "w-2 h-2 rounded-full bg-[var(--accent)]"; } 
+            else { document.body.classList.remove('show-images'); document.getElementById('img-toggle-status').className = "w-2 h-2 rounded-full bg-gray-300"; }
+        }
+        function toggleImages() { showImages = !showImages; localStorage.setItem('wiki_images', showImages); updateImageMode(); }
+        updateImageMode();
+
+        // --- BOOKMARKS ---
+        let bookmarks = JSON.parse(localStorage.getItem('wiki_bookmarks') || '[]');
+        let currentArticleTitle = "";
+
+        function toggleBookmark() {
+            const idx = bookmarks.indexOf(currentArticleTitle);
+            if(idx > -1) { bookmarks.splice(idx, 1); } else { bookmarks.push(currentArticleTitle); }
+            localStorage.setItem('wiki_bookmarks', JSON.stringify(bookmarks));
+            updateBookmarkUI();
+        }
+        function updateBookmarkUI() {
+            const btn = document.getElementById('bookmark-btn');
+            if(bookmarks.includes(currentArticleTitle)) { btn.innerHTML = `<i data-lucide="heart" class="w-5 h-5 fill-red-500 text-red-500"></i>`; }
+            else { btn.innerHTML = `<i data-lucide="heart" class="w-5 h-5"></i>`; }
+            lucide.createIcons();
+        }
+        function openLibrary() {
+            const list = document.getElementById('library-list'); list.innerHTML = '';
+            if(bookmarks.length === 0) list.innerHTML = '<p class="text-center text-[var(--text-secondary)] py-4">No saved articles.</p>';
+            else {
+                bookmarks.forEach(t => {
+                    list.innerHTML += `<div onclick="loadArticle('${t.replace(/'/g,"\\'")}')" class="p-3 bg-[var(--bg-main)] rounded-xl flex justify-between items-center cursor-pointer hover:bg-[var(--border)]"><span class="font-medium text-[var(--text-primary)] truncate">${t}</span><i data-lucide="chevron-right" class="w-4 h-4 text-[var(--text-secondary)]"></i></div>`;
+                });
+            }
+            document.getElementById('library-modal').style.display = 'flex';
+            lucide.createIcons();
+        }
+        function closeLibrary() { document.getElementById('library-modal').style.display = 'none'; }
+
+        // --- TEXT SETTINGS ---
+        let fontSize = 1.15;
+        function toggleFontMenu() { document.getElementById('font-dropdown').classList.toggle('hidden'); }
+        function changeFontSize(delta) {
+            fontSize = Math.max(0.8, Math.min(1.8, fontSize + (delta * 0.1)));
+            document.querySelector('.wiki-content').style.fontSize = `${fontSize}rem`;
+        }
+        function toggleFontFamily() {
+            document.querySelector('.wiki-content').classList.toggle('font-sans');
+        }
+
+        // --- SHARE ---
+        function shareArticle() {
+            if(navigator.share) {
+                navigator.share({ title: currentArticleTitle, url: document.getElementById('ext-link').href });
             } else {
-                document.body.classList.remove('show-images');
-                document.getElementById('img-toggle-status').className = "w-2 h-2 rounded-full bg-gray-300";
+                navigator.clipboard.writeText(document.getElementById('ext-link').href);
+                alert("Link copied to clipboard!");
             }
         }
-        function toggleImages() {
-            showImages = !showImages;
-            localStorage.setItem('wiki_images', showImages);
-            updateImageMode();
-        }
-        updateImageMode(); // Init
 
         // --- UPDATE CHECKER ---
         if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js'); }); }
@@ -279,7 +322,8 @@
         function cycleTheme(){themeIdx=(themeIdx+1)%themes.length; document.body.setAttribute('data-theme',themes[themeIdx]);let m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.name="theme-color";document.head.appendChild(m);}m.content=(themes[themeIdx]==='light'?'#ffffff':(themes[themeIdx]==='dark'?'#1e293b':'#fdf6e3'));}
         cycleTheme();
         function toggleMenu() {const m=document.getElementById('menu-dropdown');m.classList.toggle('hidden');}
-        document.addEventListener('click',e=>{const m=document.getElementById('menu-dropdown'),b=document.getElementById('menu-btn');if(!m.classList.contains('hidden')&&!m.contains(e.target)&&!b.contains(e.target))m.classList.add('hidden');});
+        document.addEventListener('click',e=>{const m=document.getElementById('menu-dropdown'),b=document.getElementById('menu-btn');if(!m.classList.contains('hidden')&&!m.contains(e.target)&&!b.contains(e.target))m.classList.add('hidden');
+        const f=document.getElementById('font-dropdown'); if(!f.classList.contains('hidden') && !f.contains(e.target) && !e.target.closest('button[onclick="toggleFontMenu()"]')) f.classList.add('hidden');});
 
         // --- LANGUAGE LOGIC ---
         function openLangMenu() {
@@ -344,11 +388,13 @@
         
         async function loadArticle(t, push=true){
             if(push) { articleStack.push(t); history.pushState({articleOpen: true}, null, ""); }
+            currentArticleTitle = t;
             
             document.getElementById('overlay').classList.add('active');document.getElementById('article-panel').classList.add('open');
             document.body.style.overflow='hidden';document.getElementById('article-container').classList.add('hidden');
             document.getElementById('loader').classList.remove('hidden');document.getElementById('article-hero').classList.add('hidden');
             document.getElementById('article-scroll').scrollTop=0;confettiFired=false;stopSpeech();
+            updateBookmarkUI();
             
             try{
                 // 1. Metadata
