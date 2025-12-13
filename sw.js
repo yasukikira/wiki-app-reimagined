@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wiki-modern-v5'; // Version Bump
+const CACHE_NAME = 'wiki-modern-v27'; // Version Bump
 const urlsToCache = [
   './',
   './index.html',
@@ -6,18 +6,20 @@ const urlsToCache = [
 ];
 
 self.addEventListener('install', (event) => {
-  self.skipWaiting(); // Force activation
+  self.skipWaiting();
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache)));
 });
 
 self.addEventListener('fetch', (event) => {
-  // 1. If it's an API call (cross-origin), go straight to network. Do not cache.
-  if (!event.request.url.startsWith(self.location.origin)) {
-    event.respondWith(fetch(event.request));
+  // Network First strategy for API calls to prevent stale data hangs
+  if (event.request.url.includes('wikipedia.org')) {
+    event.respondWith(fetch(event.request).catch(() => {
+        // Optional: Return offline fallback if needed, but for now just fail gracefully
+        return new Response(JSON.stringify({ error: 'Network Error' }));
+    }));
     return;
   }
 
-  // 2. If it's an app file, check cache first.
   event.respondWith(
     caches.match(event.request).then((response) => {
       return response || fetch(event.request);
