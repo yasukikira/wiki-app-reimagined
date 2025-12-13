@@ -72,8 +72,8 @@
         .details-content { padding: 0.5rem 1rem 2rem 1rem; }
 
         /* Components */
-        #menu-dropdown, #font-dropdown { transform-origin: top right; transition: transform 0.2s, opacity 0.2s; }
-        #menu-dropdown.hidden, #font-dropdown.hidden { display: none; }
+        #menu-dropdown { transform-origin: top right; transition: transform 0.2s, opacity 0.2s; }
+        #menu-dropdown.hidden { display: none; }
         #voice-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; }
         .mic-pulse { animation: pulse-blue 1.5s infinite; }
         @keyframes pulse-blue { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 20px rgba(37, 99, 235, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); } }
@@ -177,25 +177,14 @@
         </div>
         <div id="reader-toolbar" class="h-14 flex items-center justify-between px-4 border-b border-[var(--border)] bg-[var(--bg-card)] shrink-0 z-10 ui-element">
             <button onclick="navBack()" id="back-btn" class="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><i data-lucide="arrow-left" class="w-5 h-5"></i> Back</button>
-            <div class="flex gap-1">
-                <!-- FONT -->
-                <div class="relative">
-                    <button onclick="toggleFontMenu()" class="p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-main)] rounded-full"><i data-lucide="type" class="w-5 h-5"></i></button>
-                    <div id="font-dropdown" class="hidden absolute right-0 top-full mt-2 w-40 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl shadow-xl p-3 z-50">
-                        <div class="flex justify-between mb-3">
-                            <button onclick="changeFontSize(-1)" class="p-2 bg-[var(--bg-main)] rounded hover:bg-[var(--border)]">A-</button>
-                            <button onclick="changeFontSize(1)" class="p-2 bg-[var(--bg-main)] rounded hover:bg-[var(--border)]">A+</button>
-                        </div>
-                        <button onclick="toggleFontFamily()" class="w-full py-2 bg-[var(--bg-main)] rounded text-xs font-bold uppercase hover:bg-[var(--border)]">Serif / Sans</button>
-                    </div>
-                </div>
+            <div class="flex gap-2">
                 <!-- BOOKMARK -->
                 <button onclick="toggleBookmark()" id="bookmark-btn" class="p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-main)] rounded-full"><i data-lucide="heart" class="w-5 h-5"></i></button>
                 <!-- SHARE -->
                 <button onclick="shareArticle()" class="p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-main)] rounded-full"><i data-lucide="share-2" class="w-5 h-5"></i></button>
                 <!-- TTS -->
                 <button onclick="toggleSpeech()" id="tts-btn" class="p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-main)] rounded-full"><i data-lucide="volume-2" class="w-5 h-5"></i></button>
-                <!-- EXTERNAL LINK (Fixed) -->
+                <!-- EXTERNAL LINK -->
                 <a id="ext-link" href="#" target="_blank" class="p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-main)] rounded-full" title="Open in Wikipedia"><i data-lucide="external-link" class="w-5 h-5"></i></a>
             </div>
         </div>
@@ -267,17 +256,6 @@
         function toggleImages() { showImages = !showImages; localStorage.setItem('wiki_images', showImages); updateImageMode(); }
         updateImageMode();
 
-        // --- NUCLEAR CACHE CLEAR ---
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for(let registration of registrations) {
-                    // Optional: Unregister old ones if needed, but the new SW should take over.
-                    // registration.unregister();
-                }
-                navigator.serviceWorker.register('./sw.js');
-            });
-        }
-
         // --- BOOKMARKS ---
         let bookmarks = JSON.parse(localStorage.getItem('wiki_bookmarks') || '[]');
         let currentArticleTitle = "";
@@ -307,17 +285,6 @@
         }
         function closeLibrary() { document.getElementById('library-modal').style.display = 'none'; }
 
-        // --- TEXT SETTINGS ---
-        let fontSize = 1.15;
-        function toggleFontMenu() { document.getElementById('font-dropdown').classList.toggle('hidden'); }
-        function changeFontSize(delta) {
-            fontSize = Math.max(0.8, Math.min(1.8, fontSize + (delta * 0.1)));
-            document.querySelector('.wiki-content').style.fontSize = `${fontSize}rem`;
-        }
-        function toggleFontFamily() {
-            document.querySelector('.wiki-content').classList.toggle('font-sans');
-        }
-
         // --- SHARE ---
         function shareArticle() {
             if(navigator.share) {
@@ -329,6 +296,7 @@
         }
 
         // --- UPDATE CHECKER ---
+        if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js'); }); }
         async function checkForUpdates() {
             const reg = await navigator.serviceWorker.getRegistration();
             if(reg) { await reg.update(); if(reg.waiting) { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); window.location.reload(); } else if (reg.installing) { reg.installing.addEventListener('statechange', (e) => { if(e.target.state === 'installed') { e.target.postMessage({ type: 'SKIP_WAITING' }); window.location.reload(); } }); alert("Update downloading..."); } else { alert("App is up to date."); } } else { alert("Updates handled by browser."); }
@@ -338,8 +306,7 @@
         function cycleTheme(){themeIdx=(themeIdx+1)%themes.length; document.body.setAttribute('data-theme',themes[themeIdx]);let m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.name="theme-color";document.head.appendChild(m);}m.content=(themes[themeIdx]==='light'?'#ffffff':(themes[themeIdx]==='dark'?'#1e293b':'#fdf6e3'));}
         cycleTheme();
         function toggleMenu() {const m=document.getElementById('menu-dropdown');m.classList.toggle('hidden');}
-        document.addEventListener('click',e=>{const m=document.getElementById('menu-dropdown'),b=document.getElementById('menu-btn');if(!m.classList.contains('hidden')&&!m.contains(e.target)&&!b.contains(e.target))m.classList.add('hidden');
-        const f=document.getElementById('font-dropdown'); if(!f.classList.contains('hidden') && !f.contains(e.target) && !e.target.closest('button[onclick="toggleFontMenu()"]')) f.classList.add('hidden');});
+        document.addEventListener('click',e=>{const m=document.getElementById('menu-dropdown'),b=document.getElementById('menu-btn');if(!m.classList.contains('hidden')&&!m.contains(e.target)&&!b.contains(e.target))m.classList.add('hidden');});
 
         // --- LANGUAGE LOGIC ---
         function openLangMenu() {
@@ -435,6 +402,7 @@
                 
                 const temp=document.createElement('div'); temp.innerHTML=h;
                 temp.querySelectorAll('.mw-editsection,.reference,.noprint,.hatnote,.sidebar,style,script').forEach(e=>e.remove());
+                // Note: We do NOT remove images here anymore. CSS handles visibility.
                 temp.querySelectorAll('img').forEach(i=>{ if(i.src.startsWith('//'))i.src='https:'+i.src; });
                 temp.querySelectorAll('table').forEach(t=>{ const w=document.createElement('div'); w.className='table-wrapper'; t.parentNode.insertBefore(w,t); w.appendChild(t); });
 
