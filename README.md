@@ -4,7 +4,7 @@
 
 **Wiki Modern** is a reimagined Wikipedia reader built for speed, aesthetics, and focus. It transforms the vast knowledge of Wikipedia into a clean, app-like experience that works beautifully on desktop and mobile.
 
-[**🔴 Live Demo**](https://your-vercel-link-here.app)
+[**🔴 Live Demo**](https://wiki-app-reimagined.vercel.app/)
 
 ---
 
