@@ -4,25 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <!-- PRIMARY METADATA (Default for Discord/Twitter) -->
     <title>Wiki Modern</title>
-    <meta name="description" content="A beautiful, gesture-driven Wikipedia reader with focus mode, themes, and bookmarks.">
+    <meta name="description" content="A beautiful, gesture-driven Wikipedia reader.">
     <meta name="theme-color" content="#2563eb">
 
-    <!-- OPEN GRAPH / DISCORD EMBED -->
+    <!-- OPEN GRAPH -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Wiki Modern">
     <meta property="og:title" content="Wiki Modern">
     <meta property="og:description" content="Search any topic in a clean, modern interface.">
-    <!-- Using a high-res generic logo for the default embed -->
     <meta property="og:image" content="https://ui-avatars.com/api/?name=Wiki+App&background=2563eb&color=fff&size=1024&font-size=0.5&bold=true">
-    <meta property="og:url" content="">
-
-    <!-- TWITTER CARD -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Wiki Modern">
-    <meta name="twitter:description" content="The best way to read Wikipedia.">
-    <meta name="twitter:image" content="https://ui-avatars.com/api/?name=Wiki+App&background=2563eb&color=fff&size=1024&font-size=0.5&bold=true">
 
     <!-- PWA / Manifest -->
     <link rel="manifest" href="manifest.json">
@@ -37,6 +28,9 @@
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- SEASONAL LOADER -->
+    <script src="seasonal.js" defer></script>
 
     <style>
         /* VARIABLES */
@@ -143,7 +137,6 @@
                         <div id="img-toggle-status" class="w-2 h-2 rounded-full bg-gray-300"></div>
                     </button>
 
-                    <!-- BOOKMARKS MENU ITEM -->
                     <button onclick="openBookmarksModal(); toggleMenu()" class="w-full text-left px-4 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-main)] flex items-center gap-2"><i data-lucide="bookmark" class="w-4 h-4 text-[var(--text-secondary)]"></i> Bookmarks</button>
 
                     <button onclick="fetchRandom(); toggleMenu()" class="w-full text-left px-4 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-main)] flex items-center gap-2"><i data-lucide="dice-5" class="w-4 h-4 text-[var(--text-secondary)]"></i> Random</button>
@@ -228,13 +221,13 @@
         <div id="reader-toolbar" class="h-14 flex items-center justify-between px-4 border-b border-[var(--border)] bg-[var(--bg-card)] shrink-0 z-10 ui-element">
             <button onclick="navBack()" id="back-btn" class="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><i data-lucide="arrow-left" class="w-5 h-5"></i> Back</button>
             <div class="flex items-center gap-2">
-                <!-- Share Button (Shares WikiApp Link) -->
+                <!-- Share Button -->
                 <button onclick="shareArticle()" class="p-2 text-[var(--text-secondary)] hover:text-[var(--accent)] rounded-full transition-colors"><i data-lucide="share-2" class="w-5 h-5"></i></button>
                 <!-- Bookmark Button -->
                 <button onclick="toggleBookmark()" id="bookmark-btn" class="p-2 text-[var(--text-secondary)] hover:text-[var(--accent)] rounded-full transition-colors"><i data-lucide="bookmark" class="w-5 h-5"></i></button>
                 <div class="w-px h-6 bg-[var(--border)] mx-1"></div>
                 <button onclick="toggleSpeech()" id="tts-btn" class="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-main)] rounded-full text-[var(--text-secondary)] text-sm font-medium"><i data-lucide="volume-2" class="w-4 h-4"></i> <span id="tts-label">Listen</span></button>
-                <!-- External Wiki Button (Leads to Original Source) -->
+                <!-- External Wiki Button -->
                 <a id="ext-link" href="#" target="_blank" class="p-2 text-[var(--text-secondary)] rounded-full"><i data-lucide="external-link" class="w-5 h-5"></i></a>
             </div>
         </div>
@@ -300,18 +293,22 @@
         // IMAGE TOGGLE CONFIG
         let showImages = localStorage.getItem('wiki_images') !== 'false';
         function updateImageMode() {
-            if(showImages) { document.body.classList.add('show-images'); document.getElementById('img-toggle-status').className = "w-2 h-2 rounded-full bg-[var(--accent)]"; } 
-            else { document.body.classList.remove('show-images'); document.getElementById('img-toggle-status').className = "w-2 h-2 rounded-full bg-gray-300"; }
+            if(showImages) { 
+                document.body.classList.add('show-images'); 
+                document.getElementById('img-toggle-status').className = "w-2 h-2 rounded-full bg-[var(--accent)]"; 
+            } else { 
+                document.body.classList.remove('show-images'); 
+                document.getElementById('img-toggle-status').className = "w-2 h-2 rounded-full bg-gray-300"; 
+            }
         }
         function toggleImages() { showImages = !showImages; localStorage.setItem('wiki_images', showImages); updateImageMode(); }
         updateImageMode();
 
-        // --- STARTUP LOGIC (DEEP LINKS) ---
+        // --- STARTUP LOGIC ---
         window.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const sharedArticle = urlParams.get('q');
             if(sharedArticle) {
-                // Clean URL so refresh doesn't stick
                 window.history.replaceState({}, document.title, window.location.pathname);
                 loadArticle(sharedArticle);
             }
@@ -396,11 +393,10 @@
         function closeBookmarksModal() { document.getElementById('bookmarks-modal').style.display = 'none'; }
 
 
-        // --- SHARE LOGIC (With App Link) ---
+        // --- SHARE LOGIC ---
         async function shareArticle() {
             const title = document.getElementById('article-title').innerText;
             const shareUrl = `${window.location.origin}${window.location.pathname}?q=${encodeURIComponent(title)}`;
-            
             if (navigator.share) {
                 try { await navigator.share({ title: title, text: `Read about ${title} on WikiApp`, url: shareUrl }); } catch (err) {}
             } else {
@@ -412,23 +408,12 @@
             setTimeout(() => t.classList.remove('active'), 3000);
         }
 
-        // --- CLIENT SIDE META UPDATER (Best Effort) ---
+        // --- META UPDATER ---
         function updateClientMetadata(title, summary, image) {
-            // This updates the Browser Tab and PWA context
             document.title = `${title} - Wiki Modern`;
-            // Attempt to update meta tags (works for local history/bookmarks)
-            const metas = {
-                'og:title': title,
-                'og:description': summary.substring(0, 150) + "...",
-                'description': summary.substring(0, 150) + "...",
-                'twitter:title': title,
-            };
+            const metas = { 'og:title': title, 'og:description': summary.substring(0, 150) + "...", 'description': summary.substring(0, 150) + "...", 'twitter:title': title };
             if(image) { metas['og:image'] = image; metas['twitter:image'] = image; }
-
-            for(const [key, val] of Object.entries(metas)) {
-                let el = document.querySelector(`meta[property="${key}"]`) || document.querySelector(`meta[name="${key}"]`);
-                if(el) el.content = val;
-            }
+            for(const [key, val] of Object.entries(metas)) { let el = document.querySelector(`meta[property="${key}"]`) || document.querySelector(`meta[name="${key}"]`); if(el) el.content = val; }
         }
 
         // --- DASHBOARD ---
@@ -483,8 +468,6 @@
                 document.getElementById('ai-summary').textContent=i.extract||"No summary."; 
                 document.getElementById('ext-link').href=i.fullurl;
                 updateBookmarkBtn();
-
-                // UPDATE CLIENT META
                 updateClientMetadata(i.title, i.extract || "Read on WikiApp", i.thumbnail ? i.thumbnail.source : null);
                 
                 if(i.revisions && i.revisions.length > 0) {
@@ -552,7 +535,6 @@
                 document.getElementById('article-panel').classList.remove('open'); document.getElementById('overlay').classList.remove('active');
                 document.body.style.overflow='auto'; stopSpeech();
                 renderBookmarks(); // Refresh bookmarks in case one was removed inside article
-                // Reset metadata to app default
                 updateClientMetadata("Wiki Modern", "Search any topic in a clean, modern interface.", "https://ui-avatars.com/api/?name=Wiki+App&background=2563eb&color=fff&size=1024&font-size=0.5&bold=true");
                 if(modifyHistory && history.state) history.back();
             }
