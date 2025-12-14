@@ -46,17 +46,16 @@ Search for specific terms to trigger hidden visuals!
 
 ## 🚀 How to Run Locally
 
-No build step required! This is a static web application.
-
 1.  **Clone the repository**
     ```bash
-    git clone https://github.com/your-username/wiki-app-reimagined.git
+    git clone https://github.com/yasukikira/wiki-app-reimagined.git
     ```
 2.  **Open the folder**
-    Navigate to the folder in your file explorer.
-3.  **Launch**
-    Open `index.html` in your browser.
-    *Note: For Voice Search and PWA features to work perfectly, use a local server (like Live Server in VS Code).*
+    Navigate to the project folder.
+3.  **Launch (Important)**
+    To enable PWA and Voice Search features, you must serve the files locally (Service Workers do not work on `file://` protocol).
+    *   **VS Code:** Install the "Live Server" extension and click "Go Live".
+    *   **Python:** Run `python -m http.server` in the terminal and open `localhost:8000`.
 
 ---
 
