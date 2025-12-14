@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wiki-modern-v30-stable';
+const CACHE_NAME = 'wiki-modern-vr-stable';
 const urlsToCache = [
   './',
   './index.html',
