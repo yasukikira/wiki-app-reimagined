@@ -469,8 +469,13 @@
                 const m=await fetch(`https://${currentLang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(t)}&prop=extracts|pageimages|info|revisions&inprop=url&rvprop=timestamp|user&pithumbsize=1000&explaintext&exintro&format=json&origin=*`).then(r=>r.json());
                 const pid=Object.keys(m.query.pages)[0]; if(pid==="-1")throw new Error(); const i=m.query.pages[pid];
                 
-                document.getElementById('article-title').innerHTML=i.title; 
-                document.getElementById('ai-summary').textContent=i.extract||"No summary."; 
+                // ... inside loadArticle() ...
+document.getElementById('article-title').innerHTML=i.title; 
+
+// HOOK: Check for Easter Eggs
+if(window.checkForEasterEgg) window.checkForEasterEgg(i.title);
+
+// ... rest of the function ...                document.getElementById('ai-summary').textContent=i.extract||"No summary."; 
                 document.getElementById('ext-link').href=i.fullurl;
                 updateBookmarkBtn();
                 updateClientMetadata(i.title, i.extract || "Read on WikiApp", i.thumbnail ? i.thumbnail.source : null);
