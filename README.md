@@ -50,7 +50,7 @@ No build step required! This is a static web application.
 
 1.  **Clone the repository**
     ```bash
-    git clone https://github.com/your-username/wiki-modern.git
+    git clone https://github.com/your-username/wiki-app-reimagined.git
     ```
 2.  **Open the folder**
     Navigate to the folder in your file explorer.
