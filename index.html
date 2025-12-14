@@ -3,14 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- PRIMARY METADATA (Default for Discord/Twitter) -->
     <title>Wiki Modern</title>
-
-    <!-- Custom Embeds / Open Graph (Static for the App) -->
-    <meta property="og:title" content="Wiki Modern">
-    <meta property="og:description" content="A beautiful, gesture-driven Wikipedia reader.">
-    <meta property="og:type" content="website">
-    <meta property="og:image" content="https://ui-avatars.com/api/?name=Wiki&background=2563eb&color=fff&size=512&length=1&font-size=0.6&bold=true">
+    <meta name="description" content="A beautiful, gesture-driven Wikipedia reader with focus mode, themes, and bookmarks.">
     <meta name="theme-color" content="#2563eb">
+
+    <!-- OPEN GRAPH / DISCORD EMBED -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Wiki Modern">
+    <meta property="og:title" content="Wiki Modern">
+    <meta property="og:description" content="Search any topic in a clean, modern interface.">
+    <!-- Using a high-res generic logo for the default embed -->
+    <meta property="og:image" content="https://ui-avatars.com/api/?name=Wiki+App&background=2563eb&color=fff&size=1024&font-size=0.5&bold=true">
+    <meta property="og:url" content="">
+
+    <!-- TWITTER CARD -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Wiki Modern">
+    <meta name="twitter:description" content="The best way to read Wikipedia.">
+    <meta name="twitter:image" content="https://ui-avatars.com/api/?name=Wiki+App&background=2563eb&color=fff&size=1024&font-size=0.5&bold=true">
 
     <!-- PWA / Manifest -->
     <link rel="manifest" href="manifest.json">
@@ -384,32 +396,39 @@
         function closeBookmarksModal() { document.getElementById('bookmarks-modal').style.display = 'none'; }
 
 
-        // --- SHARE LOGIC (FIXED) ---
+        // --- SHARE LOGIC (With App Link) ---
         async function shareArticle() {
             const title = document.getElementById('article-title').innerText;
-            // Generate link to YOUR app, not Wikipedia
             const shareUrl = `${window.location.origin}${window.location.pathname}?q=${encodeURIComponent(title)}`;
             
             if (navigator.share) {
-                try { 
-                    await navigator.share({ 
-                        title: title, 
-                        text: `Read about ${title} on WikiApp`, 
-                        url: shareUrl 
-                    }); 
-                } catch (err) {}
+                try { await navigator.share({ title: title, text: `Read about ${title} on WikiApp`, url: shareUrl }); } catch (err) {}
             } else {
-                try { 
-                    await navigator.clipboard.writeText(shareUrl); 
-                    showToast("WikiApp link copied!"); 
-                } catch (err) { 
-                    showToast("Could not copy link."); 
-                }
+                try { await navigator.clipboard.writeText(shareUrl); showToast("WikiApp link copied!"); } catch (err) { showToast("Could not copy link."); }
             }
         }
         function showToast(msg) {
             const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('active');
             setTimeout(() => t.classList.remove('active'), 3000);
+        }
+
+        // --- CLIENT SIDE META UPDATER (Best Effort) ---
+        function updateClientMetadata(title, summary, image) {
+            // This updates the Browser Tab and PWA context
+            document.title = `${title} - Wiki Modern`;
+            // Attempt to update meta tags (works for local history/bookmarks)
+            const metas = {
+                'og:title': title,
+                'og:description': summary.substring(0, 150) + "...",
+                'description': summary.substring(0, 150) + "...",
+                'twitter:title': title,
+            };
+            if(image) { metas['og:image'] = image; metas['twitter:image'] = image; }
+
+            for(const [key, val] of Object.entries(metas)) {
+                let el = document.querySelector(`meta[property="${key}"]`) || document.querySelector(`meta[name="${key}"]`);
+                if(el) el.content = val;
+            }
         }
 
         // --- DASHBOARD ---
@@ -462,9 +481,11 @@
                 
                 document.getElementById('article-title').innerHTML=i.title; 
                 document.getElementById('ai-summary').textContent=i.extract||"No summary."; 
-                // IMPORTANT: This sets the External Link Button, but NOT the share button anymore.
                 document.getElementById('ext-link').href=i.fullurl;
                 updateBookmarkBtn();
+
+                // UPDATE CLIENT META
+                updateClientMetadata(i.title, i.extract || "Read on WikiApp", i.thumbnail ? i.thumbnail.source : null);
                 
                 if(i.revisions && i.revisions.length > 0) {
                     const d = new Date(i.revisions[0].timestamp).toLocaleDateString();
@@ -531,6 +552,8 @@
                 document.getElementById('article-panel').classList.remove('open'); document.getElementById('overlay').classList.remove('active');
                 document.body.style.overflow='auto'; stopSpeech();
                 renderBookmarks(); // Refresh bookmarks in case one was removed inside article
+                // Reset metadata to app default
+                updateClientMetadata("Wiki Modern", "Search any topic in a clean, modern interface.", "https://ui-avatars.com/api/?name=Wiki+App&background=2563eb&color=fff&size=1024&font-size=0.5&bold=true");
                 if(modifyHistory && history.state) history.back();
             }
         }
