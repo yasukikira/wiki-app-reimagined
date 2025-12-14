@@ -1,8 +1,13 @@
-const CACHE_NAME = 'wiki-modern-v1.0.0-full-R'; // Version Bump
+const CACHE_NAME = 'wiki-modern-v1.1.0-seasonal'; // Version Bumped
 const urlsToCache = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  // You must include the new files here so they work offline
+  './seasonal.js',
+  './seasonal.css',
+  './easter-eggs.js',
+  './easter-eggs.css'
 ];
 
 self.addEventListener('install', (event) => {
