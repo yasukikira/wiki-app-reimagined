@@ -1,13 +1,10 @@
 /* easter-eggs.css */
 
-/* --- 1. CHRISTMAS DECORATION --- */
-/* Logic: Red Title + Green Shadow */
+/* --- CHRISTMAS --- */
 body.egg-xmas.show-images #article-title {
     color: #dc2626 !important;
     text-shadow: 2px 2px 0px rgba(22, 163, 74, 0.2);
 }
-
-/* Garland Header */
 body.egg-xmas.show-images #article-container::before {
     content: '🎄 ❄️ 🎄 ❄️ 🎄';
     display: block;
@@ -17,48 +14,33 @@ body.egg-xmas.show-images #article-container::before {
     letter-spacing: 0.5rem;
     animation: twinkle 2s infinite alternate;
 }
+@keyframes twinkle { from { opacity: 0.6; filter: grayscale(0.2); } to { opacity: 1; filter: grayscale(0); } }
 
-@keyframes twinkle {
-    from { opacity: 0.6; filter: grayscale(0.2); }
-    to { opacity: 1; filter: grayscale(0); }
-}
-
-
-/* --- 2. NEW YEAR DECORATION --- */
-/* Logic: Gold/Silver Theme */
-
-/* Gold Title */
-body.egg-newyear.show-images #article-title {
-    background: linear-gradient(to right, #ca8a04, #eab308, #ca8a04);
+/* --- NEW YEAR (Dynamic) --- */
+/* Style the JS-injected banner */
+#egg-banner {
+    text-align: center;
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.2rem;
+    background: linear-gradient(to right, #ca8a04, #facc15, #ca8a04);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    text-shadow: 0px 2px 10px rgba(234, 179, 8, 0.3);
+    animation: bounceText 2s infinite;
+    display: none; /* Hidden by default */
 }
 
-/* Fireworks Header */
-body.egg-newyear.show-images #article-container::before {
-    content: '🎆 🥂 2025 🥂 🎆';
+/* Only show if class is active AND images are on */
+body.egg-newyear.show-images #egg-banner {
     display: block;
-    text-align: center;
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
-    letter-spacing: 0.5rem;
-    font-weight: bold;
-    color: #ca8a04;
-    animation: bounceText 2s infinite;
+}
+
+body.egg-newyear.show-images #article-title {
+    text-shadow: 0px 2px 15px rgba(234, 179, 8, 0.4);
 }
 
 @keyframes bounceText {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-5px); }
-}
-
-/* Optional: Add a subtle gold glow to the article summary box */
-body.egg-newyear.show-images .bg-\[var\(--accent-soft\)\] {
-    border-color: #eab308 !important;
-    background-color: #fefce8 !important; /* Yellow-50 */
-}
-/* Dark mode adjust for gold box */
-body.egg-newyear.show-images[data-theme="dark"] .bg-\[var\(--accent-soft\)\] {
-    background-color: #422006 !important; /* Yellow-950/Brownish */
 }
