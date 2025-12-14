@@ -1,59 +1,53 @@
-
 (function() {
-    // Configuration: "Page Title" : "css-class-name"
-    // Use lowercase keys.
     const eggs = {
-        // --- Christmas ---
-        "christmas": "egg-xmas",
-        "christmas day": "egg-xmas",
-        "christmas eve": "egg-xmas",
-        "christmas tree": "egg-xmas",
-        "xmas": "egg-xmas",
-
-        // --- New Year ---
-        "new year": "egg-newyear",
-        "new year's day": "egg-newyear",
-        "new year's eve": "egg-newyear",
-        "hogmanay": "egg-newyear"
+        "christmas": "egg-xmas", "christmas day": "egg-xmas", "christmas eve": "egg-xmas", "xmas": "egg-xmas",
+        "new year": "egg-newyear", "new year's day": "egg-newyear", "new year's eve": "egg-newyear", "hogmanay": "egg-newyear"
     };
 
     window.checkForEasterEgg = function(title) {
-        // 1. Reset: Remove all known egg classes
+        // 1. Reset
         document.body.classList.remove('egg-xmas', 'egg-newyear');
+        const existingBanner = document.getElementById('egg-banner');
+        if(existingBanner) existingBanner.remove();
 
         if(!title) return;
         const key = title.toLowerCase().trim();
         const eggClass = eggs[key];
 
-        // 2. Check for match
         if (eggClass) {
             console.log("🥚 Active Easter Egg:", eggClass);
             document.body.classList.add(eggClass);
 
-            // 3. Special Logic: New Year Confetti
-            if(eggClass === 'egg-newyear' && window.confetti) {
-                var duration = 3000;
-                var animationEnd = Date.now() + duration;
-                var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 60 };
+            // 2. Logic for New Year Banner (Dynamic Year)
+            if(eggClass === 'egg-newyear') {
+                const now = new Date();
+                // If Dec, show next year. If Jan, show current year.
+                const targetYear = now.getMonth() === 11 ? now.getFullYear() + 1 : now.getFullYear();
+                
+                const banner = document.createElement('div');
+                banner.id = 'egg-banner';
+                banner.innerText = `🎆 🥂 ${targetYear} 🥂 🎆`;
+                
+                // Insert before the article body
+                const container = document.getElementById('article-container');
+                if(container) container.insertBefore(banner, container.firstChild);
 
-                var randomInRange = (min, max) => Math.random() * (max - min) + min;
-
-                var interval = setInterval(function() {
-                    var timeLeft = animationEnd - Date.now();
-                    if (timeLeft <= 0) return clearInterval(interval);
-                    var particleCount = 50 * (timeLeft / duration);
-                    confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
-                    confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
-                }, 250);
+                // Confetti Logic
+                if(window.confetti) {
+                    var duration = 3000;
+                    var end = Date.now() + duration;
+                    (function frame() {
+                        confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#FFD700', '#C0C0C0'] });
+                        confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#FFD700', '#C0C0C0'] });
+                        if (Date.now() < end) requestAnimationFrame(frame);
+                    }());
+                }
             }
 
-            // 4. Notification (Once per session per article)
+            // 3. Notification
             const storageKey = `egg_found_${key}`;
             if(!sessionStorage.getItem(storageKey)) {
-                if(window.showToast) {
-                    // Slight delay to ensure UI is ready
-                    setTimeout(() => window.showToast("🎁 You found an Easter Egg!"), 1000);
-                }
+                if(window.showToast) setTimeout(() => window.showToast("🎁 You found an Easter Egg!"), 1000);
                 sessionStorage.setItem(storageKey, "true");
             }
         }
